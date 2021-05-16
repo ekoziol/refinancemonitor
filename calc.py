@@ -14,3 +14,5 @@ def calc_loan_monthly_payment(principal, rate, term):
 def total_payment(monthly_payment, term):
     return monthly_payment * term
 
+def target_interest_rate(monthly_payment, term):
+    False
