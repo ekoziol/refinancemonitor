@@ -3,6 +3,7 @@
 import dash
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import dash_table
 from dash.dependencies import Input, Output
 from datetime import datetime
@@ -15,64 +16,88 @@ from calc import *
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 # money = FormatTemplate.money(2)
 
-app.layout = html.Div(className='main', children=[
-    html.Div(children=[
-        html.H2("Current Mortgage Info"),
-        html.P("Original Principal"),
-        dcc.Input(id="current_principal", type="number", placeholder="Original Principal", value=510000, debounce = True),
-        html.Br(),
+app.layout = dbc.Container([
+    html.Div(className='main', children=[
+        dbc.Row([
+            dbc.Col(
+                html.Div(children=[
+                html.H2("Current State of Mortgage Info"),
 
-        html.P("Original Interest Rate"),
-        dcc.Input(id="current_rate", type="number", placeholder="Current Interest Rate", value=0.02875, debounce = True),
-        html.Br(),
-
-        html.P("Original Term in Months (30 year = 360 months)"),
-        dcc.Input(id="current_term", type="number", placeholder="Term", value=360, debounce = True),
-        html.Br(),
-
-        html.Div(id="monthly_payment"),
-        html.Div(id="minimum_potential_payment"),
-
-        html.P("Remaining Principal"),
-        dcc.Input(id="remaining_principal", type="number", placeholder="Remaining Principal", value=220446.5, debounce = True),
-        html.Br(),
-
-        html.P("Remaining Term in Months (20 years = 240 months)"),
-        dcc.Input(id="remaining_term", type="number", placeholder="Remaining Term", value=240, debounce = True),
-        html.Br(),
-
-        html.Div(children=[
-                html.H2("Refinancing Info"),
-
-                html.P("Target Monthly Payment"),
-                dcc.Input(id="target_monthly_payment", type="number", placeholder="Target Monthly Payment", value=2000, debounce = True),
+                html.P("Remaining Principal"),
+                dcc.Input(id="remaining_principal", type="number", placeholder="Remaining Principal", value=220446.5, debounce = True),
                 html.Br(),
 
-                html.P("Target Term"),
-                dcc.Input(id="target_term", type="number", placeholder="Target Term", value=360, debounce = True),
+                html.P("Remaining Term in Months (20 years = 240 months)"),
+                dcc.Input(id="remaining_term", type="number", placeholder="Remaining Term", value=240, debounce = True),
                 html.Br(),
+                html.Div(id="monthly_payment"),
+                html.Div(id="minimum_potential_payment"),
+            ],)
+            ,width=4),
+            
+            dbc.Col(
+                html.Div(children=[
+                    html.H2("Mortgage Origination Info"),
+                    html.P("Original Principal"),
+                    dcc.Input(id="current_principal", type="number", placeholder="Original Principal", value=510000, debounce = True),
+                    html.Br(),
 
-                html.P("Target Interest Rate"),
-                dcc.Input(id="target_rate", type="number", placeholder="Target Interest Rate", value=0.02, debounce = True),
-                html.Br(),
+                    html.P("Original Interest Rate"),
+                    dcc.Input(id="current_rate", type="number", placeholder="Current Interest Rate", value=0.02875, debounce = True),
+                    html.Br(),
 
-                html.Div(id="Required Interest Rate"),
+                    html.P("Original Term in Months (30 year = 360 months)"),
+                    dcc.Input(id="current_term", type="number", placeholder="Term", value=360, debounce = True),
+                    html.Br(),
+                    ])
+                ),
 
-            ])
-        ], style={'display': 'inline-block'}),
-    html.Div(children=[
-        dcc.Graph(
-        id='monthly_payment_graph'
-        ),
-        dcc.Graph(
-        id='future_payment_graph'
-        ),
-        ], style={'display': 'inline-block'})
-    ]
-)
+            dbc.Col(
+                html.Div(children=[
+                    html.H2("Refinancing Info"),
+
+                    html.P("Target Monthly Payment"),
+                    dcc.Input(id="target_monthly_payment", type="number", placeholder="Target Monthly Payment", value=2000, debounce = True),
+                    html.Br(),
+
+                    html.P("Target Term"),
+                    dcc.Input(id="target_term", type="number", placeholder="Target Term", value=360, debounce = True),
+                    html.Br(),
+
+                    html.P("Target Interest Rate"),
+                    dcc.Input(id="target_rate", type="number", placeholder="Target Interest Rate", value=0.02, debounce = True),
+                    html.Br(),
+
+                    html.P("Estimated Refinancing Costs"),
+                    dcc.Input(id="refi_cost", type="number", placeholder="Refinancings Costs", value=10000, debounce = True),
+                    html.Br(),
+
+                    # html.Div(id="Required Interest Rate"),
+
+                ],)
+                ,width=4)
+            ]#, style={'display': 'inline-block'}
+            ),
+        dbc.Row(
+            [
+                dbc.Col(html.Div(children=[
+                    dcc.Graph(id='monthly_payment_graph')
+                ])),
+                dbc.Col(html.Div(children=[
+                    dcc.Graph(id='future_payment_graph'),
+                ])),
+                dbc.Col(html.Div(children=[
+                    dcc.Graph(id='total_payment_graph'),
+                ])),
+            ]#,
+            #style={'display': 'inline-block'}
+            )
+            
+        ])
+    ], fluid=True)
 
 @app.callback(
     Output("monthly_payment", "children"),

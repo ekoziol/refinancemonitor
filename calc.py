@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import numpy_financial as npf
 
 def calc_loan_monthly_payment(principal, rate, term):
     # a = principal/((1+rate/12)**term-1)/(rate/12*(1+rate/12)**term)
@@ -43,3 +44,14 @@ def create_mortgage_table(principal, rate, term):
     df['months_remaining'] = term - df['month']                                     
     df['amount_remaining'] = df['months_remaining'].map(lambda x: amount_remaining(principal, monthly_payment, rate, x))
     return df
+
+def find_break_even_interest(principal, new_term, target, current_rate, increment=0.00125):
+    event_rate = current_rate
+    while True:
+        temp_total_payment = total_payment(calc_loan_monthly_payment(principal, event_rate, new_term),new_term)
+        if temp_total_payment < target:
+            break
+        event_rate = event_rate - increment
+        if event_rate < 0:
+            break
+    return event_rate
