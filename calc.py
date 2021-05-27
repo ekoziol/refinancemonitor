@@ -48,10 +48,41 @@ def create_mortgage_table(principal, rate, term):
 def find_break_even_interest(principal, new_term, target, current_rate, increment=0.00125):
     event_rate = current_rate
     while True:
-        temp_total_payment = total_payment(calc_loan_monthly_payment(principal, event_rate, new_term),new_term)
-        if temp_total_payment < target:
+        # temp_total_payment = total_payment(calc_loan_monthly_payment(principal, event_rate, new_term),new_term)
+        temp_total_interest = ipmt_total(event_rate, new_term, principal)
+        if temp_total_interest < target:
             break
         event_rate = event_rate - increment
         if event_rate < 0:
             break
     return event_rate
+
+
+def create_efficient_frontier(original_principal,
+                              original_rate,
+                              original_term,
+                              current_principal,
+                              term_remaining,
+                              new_term,
+                              refi_cost):
+    
+    original_total_interest = ipmt_total(original_rate, original_term, original_principal, get_per(original_term))
+    
+    df = create_mortgage_table(original_principal, original_rate, original_term)
+    df['total_interest_paid'] = df['months_remaining'].map(lambda x:ipmt_total(original_rate, original_term, original_principal, get_per(original_term-x)))
+    df['new_target_total'] = original_total_interest - refi_cost - df['total_interest_paid']
+    
+    df['interest_rate'] = df.apply(lambda x: find_break_even_interest(x['amount_remaining'], new_term, x['new_target_total'], original_rate), axis=1)
+    df['total_new_interest'] = df.apply(lambda x: ipmt_total(x['interest_rate'], new_term, x['amount_remaining'], get_per(new_term)),axis=1)
+
+    return df
+    
+
+def ipmt_total(rate, term, principal, per=None):
+    if per is None:
+        per = np.arange(term) + 1
+    return  -1*np.sum(npf.ipmt(rate/12, per,term, principal))
+
+def get_per(months):
+    return np.arange(months) + 1
+

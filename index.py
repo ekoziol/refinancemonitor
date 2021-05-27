@@ -339,5 +339,9 @@ def understand_mortgage_extension(original_principal,
     return fig
 
 
+def eff_graph(eff):
+    fig = px.line(eff, x='month', y='interest_rate')
+    fig.show()
+
 if __name__ == "__main__":
     app.run_server("0.0.0.0", debug=True, port=8050)
