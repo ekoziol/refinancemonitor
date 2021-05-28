@@ -90,7 +90,7 @@ app.layout = dbc.Container([
                     dcc.Graph(id='future_payment_graph'),
                 ])),
                 dbc.Col(html.Div(children=[
-                    dcc.Graph(id='total_payment_graph'),
+                    dcc.Graph(id='efficient_frontier_graph'),
                 ])),
             ]#,
             #style={'display': 'inline-block'}
@@ -137,12 +137,29 @@ def update_monthly_payment_graph(current_principal, current_term):
     return create_value_plot(current_principal, current_term)
 
 @app.callback(
-    Output("total_payment_graph", "figure"),
+    Output("efficient_frontier_graph", "figure"),
     Input("current_principal", "value"),
+    Input("current_rate", "value"),
     Input("current_term", "value"),
+    Input("remaining_principal", "value"),
+    Input("remaining_term", "value"),
+    Input("target_term", "value"),
+    Input("refi_cost", "value"),
 )
-def update_total_payment_graph(current_principal, current_term):
-    return create_value_plot(current_principal, current_term, y='total_payment', title='Total Payment by Interest Rate')
+def update_eff_graph(original_principal,
+                      original_rate,
+                      original_term,
+                      current_principal,
+                      term_remaining,
+                      new_term,
+                      refi_cost):
+    return create_eff_graph(original_principal,
+                      original_rate,
+                      original_term,
+                      current_principal,
+                      term_remaining,
+                      new_term,
+                      refi_cost)
 
 
 @app.callback(
@@ -339,9 +356,54 @@ def understand_mortgage_extension(original_principal,
     return fig
 
 
-def eff_graph(eff):
-    fig = px.line(eff, x='month', y='interest_rate')
-    fig.show()
+def create_eff_graph(original_principal,
+                      original_rate,
+                      original_term,
+                      current_principal,
+                      term_remaining,
+                      new_term,
+                      refi_cost):
+    eff = create_efficient_frontier(original_principal,
+                              original_rate,
+                              original_term,
+                              current_principal,
+                              term_remaining,
+                              new_term,
+                              refi_cost)
+
+    return eff_graph(eff, original_term - term_remaining)
+
+def eff_graph(eff,current_month):
+    # layout = px.Layout(
+    # ,
+    # xaxis=dict(
+    #     title="Original Mortgage Payment Month"
+    # ),
+    # yaxis=dict(
+    #     title="Refinance Interest Rate"
+    # ) ) 
+
+    negative_month = eff.loc[eff['interest_rate']<0, 'month'].min()
+    max_rate = eff['interest_rate'].max() + 0.00125
+    eff.loc[eff['interest_rate']<0, 'interest_rate'] = 0
+
+    fig = px.area(eff, 
+                x='month', 
+                y='interest_rate', 
+                color_discrete_sequence=['green'], 
+                title="Efficient Frontier",
+                )
+
+    fig.add_shape(type='line',
+                x0=negative_month,
+                y0=0,
+                x1=negative_month,
+                y1=max_rate,
+                line=dict(color='Red',),
+                xref='x',
+                yref='y'
+    )
+    return fig
 
 if __name__ == "__main__":
     app.run_server("0.0.0.0", debug=True, port=8050)
