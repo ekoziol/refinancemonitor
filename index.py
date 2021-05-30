@@ -10,6 +10,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 # from dash_table import DataTable, FormatTemplate
 
 from calc import *
@@ -128,13 +129,38 @@ def create_staged_value_plot(principal, remaining_principal, term, x='rate', y='
     return fig
 
 
+# @app.callback(
+#     Output("monthly_payment_graph", "figure"),
+#     Input("current_principal", "value"),
+#     Input("current_term", "value"),
+# )
+# def update_monthly_payment_graph(current_principal, current_term):
+#     return create_value_plot(current_principal, current_term)
+
 @app.callback(
     Output("monthly_payment_graph", "figure"),
     Input("current_principal", "value"),
+    Input("remaining_principal", "value"),
     Input("current_term", "value"),
+    Input("current_rate", "value"),
+    Input("target_term", "value"),
+    Input("target_monthly_payment", "value"),
 )
-def update_monthly_payment_graph(current_principal, current_term):
-    return create_value_plot(current_principal, current_term)
+def update_monthly_payment_graph(principal, 
+                                remaining_principal, 
+                                current_term,
+                                current_rate,
+                                target_term,
+                                target_monthly_payment):
+    return create_staged_value_plot(principal, 
+                                remaining_principal, 
+                                current_term,
+                                current_rate,
+                                target_term,
+                                target_monthly_payment,
+                                x='rate', 
+                                y='monthly_payment', 
+                                title='Monthly Payment by Interest Rate')
 
 @app.callback(
     Output("efficient_frontier_graph", "figure"),
@@ -145,6 +171,7 @@ def update_monthly_payment_graph(current_principal, current_term):
     Input("remaining_term", "value"),
     Input("target_term", "value"),
     Input("refi_cost", "value"),
+    Input("target_rate", "value"),
 )
 def update_eff_graph(original_principal,
                       original_rate,
@@ -152,14 +179,16 @@ def update_eff_graph(original_principal,
                       current_principal,
                       term_remaining,
                       new_term,
-                      refi_cost):
+                      refi_cost,
+                      target_rate):
     return create_eff_graph(original_principal,
                       original_rate,
                       original_term,
                       current_principal,
                       term_remaining,
                       new_term,
-                      refi_cost)
+                      refi_cost,
+                      target_rate)
 
 
 @app.callback(
@@ -258,10 +287,17 @@ def create_staged_value_plot(principal,
                             y='monthly_payment', 
                             title='Monthly Payment by Interest Rate'):
     df = create_mortage_range(principal, current_term)
+    print("Staged value plot")
+    print(df)
+    print("++++")
     dfc = create_mortage_range(remaining_principal, target_term)
 
-    target_interest_rate_current = find_target_interest_rate(principal, term, target_monthly_payment)
-    target_interest_rate_refi = find_target_interest_rate
+    # target_interest_rate_current = find_target_interest_rate(principal, term, target_monthly_payment)
+    target_interest_rate_refi = find_target_interest_rate(remaining_principal, target_term, target_monthly_payment)
+
+    current_monthly_payment = df.loc[df['rate']<=current_rate,'monthly_payment'].max()
+
+    target_monthly_payment = dfc.loc[dfc['rate']<=target_interest_rate_refi,'monthly_payment'].max()
 
     fig = px.line(df, x=x, y=y, title=title)
     fig.append_trace({'x':dfc[x],'y':dfc[y],'type':'scatter','name':'Remaining Principal'},1,1)
@@ -270,10 +306,13 @@ def create_staged_value_plot(principal,
     #horizontal line
     fig.add_shape(type='line',
                 x0=0,
-                y0=2015.11,
-                x1=0.0250,
-                y1=2015.11,
-                line=dict(color='Black',),
+                y0=current_monthly_payment,
+                x1=current_rate,
+                y1=current_monthly_payment,
+                line=dict(
+                    color='Black',
+                    dash='dash'
+                    ),
                 xref='x',
                 yref='y'
     )
@@ -281,10 +320,12 @@ def create_staged_value_plot(principal,
     #vertical line
     fig.add_shape(type='line',
                 x0=current_rate,
-                y0=1000,
+                y0=0,
                 x1=current_rate,
-                y1=2015.11,
-                line=dict(color='Black',),
+                y1=current_monthly_payment,
+                line=dict(
+                    color='Black',
+                    dash='dash'),
                 xref='x',
                 yref='y'
     )
@@ -293,22 +334,28 @@ def create_staged_value_plot(principal,
     #horizontal
     fig.add_shape(type='line',
                 x0=0,
-                y0=1699.58,
-                x1=0.0125,
-                y1=1699.58,
-                line=dict(color='Red',),
+                y0=target_monthly_payment,
+                x1=target_interest_rate_refi,
+                y1=target_monthly_payment,
+                line=dict(
+                        color='Green',
+                        dash='dash'
+                    ),
                 xref='x',
-                yref='y'
+                yref='y',
     )
     #vertical
     fig.add_shape(type='line',
-                x0=target_interest_rate_current,
-                y0=1000,
-                x1=target_interest_rate_current,
-                y1=1699.58,
-                line=dict(color='Red',),
+                x0=target_interest_rate_refi,
+                y0=0,
+                x1=target_interest_rate_refi,
+                y1=target_monthly_payment,
+                line=dict(
+                        color='Green',
+                        dash='dash'
+                    ),
                 xref='x',
-                yref='y'
+                yref='y',
     )
     
     return fig
@@ -351,6 +398,14 @@ def understand_mortgage_extension(original_principal,
                       'type':'scatter',
                       'line':{'dash': 'dash', 'color': 'blue'},
                       'name':'Original Loan'},1,1)
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=-0.4,
+        xanchor="left",
+        x=0),
+        title="Refinance Payoff Scenario"
+        )
     
     
     return fig
@@ -362,7 +417,8 @@ def create_eff_graph(original_principal,
                       current_principal,
                       term_remaining,
                       new_term,
-                      refi_cost):
+                      refi_cost,
+                      target_rate):
     eff = create_efficient_frontier(original_principal,
                               original_rate,
                               original_term,
@@ -371,9 +427,9 @@ def create_eff_graph(original_principal,
                               new_term,
                               refi_cost)
 
-    return eff_graph(eff, original_term - term_remaining)
+    return eff_graph(eff, original_term - term_remaining, target_rate)
 
-def eff_graph(eff,current_month):
+def eff_graph(eff,current_month, target_rate):
     # layout = px.Layout(
     # ,
     # xaxis=dict(
@@ -391,7 +447,7 @@ def eff_graph(eff,current_month):
                 x='month', 
                 y='interest_rate', 
                 color_discrete_sequence=['green'], 
-                title="Efficient Frontier",
+                title="Line of Total Interest Break Even",
                 )
 
     fig.add_shape(type='line',
@@ -403,6 +459,15 @@ def eff_graph(eff,current_month):
                 xref='x',
                 yref='y'
     )
+
+    fig.add_trace(go.Scatter(
+        x=[current_month],
+        y=[target_rate],
+        mode='markers+text',
+        name='Current Target',
+        text='Current Target',
+        textposition="top center"
+        ))
     return fig
 
 if __name__ == "__main__":
