@@ -27,6 +27,29 @@ app.layout = dbc.Container([
         dbc.Row([
             dbc.Col(
                 html.Div(children=[
+                    html.H2("Refinancing Info"),
+
+                    html.P("Target Monthly Payment"),
+                    dcc.Input(id="target_monthly_payment", type="number", placeholder="Target Monthly Payment", value=2000, debounce = True),
+                    html.Br(),
+
+                    html.P("Target Term"),
+                    dcc.Input(id="target_term", type="number", placeholder="Target Term", value=360, debounce = True),
+                    html.Br(),
+
+                    html.P("Target Interest Rate"),
+                    dcc.Input(id="target_rate", type="number", placeholder="Target Interest Rate", value=0.02, debounce = True),
+                    html.Br(),
+
+                    html.P("Estimated Refinancing Costs"),
+                    dcc.Input(id="refi_cost", type="number", placeholder="Refinancings Costs", value=5000, debounce = True),
+                    html.Br(),
+
+                    # html.Div(id="Required Interest Rate"),
+
+                ],),width=4),
+            dbc.Col(
+                html.Div(children=[
                 html.H2("Current State of Mortgage Info"),
 
                 html.P("Remaining Principal"),
@@ -36,8 +59,7 @@ app.layout = dbc.Container([
                 html.P("Remaining Term in Months (20 years = 240 months)"),
                 dcc.Input(id="remaining_term", type="number", placeholder="Remaining Term", value=240, debounce = True),
                 html.Br(),
-                html.Div(id="monthly_payment"),
-                html.Div(id="minimum_potential_payment"),
+
             ],)
             ,width=4),
             
@@ -55,46 +77,57 @@ app.layout = dbc.Container([
                     html.P("Original Term in Months (30 year = 360 months)"),
                     dcc.Input(id="current_term", type="number", placeholder="Term", value=360, debounce = True),
                     html.Br(),
-                    ])
-                ),
-
-            dbc.Col(
-                html.Div(children=[
-                    html.H2("Refinancing Info"),
-
-                    html.P("Target Monthly Payment"),
-                    dcc.Input(id="target_monthly_payment", type="number", placeholder="Target Monthly Payment", value=2000, debounce = True),
-                    html.Br(),
-
-                    html.P("Target Term"),
-                    dcc.Input(id="target_term", type="number", placeholder="Target Term", value=360, debounce = True),
-                    html.Br(),
-
-                    html.P("Target Interest Rate"),
-                    dcc.Input(id="target_rate", type="number", placeholder="Target Interest Rate", value=0.02, debounce = True),
-                    html.Br(),
-
-                    html.P("Estimated Refinancing Costs"),
-                    dcc.Input(id="refi_cost", type="number", placeholder="Refinancings Costs", value=10000, debounce = True),
-                    html.Br(),
-
-                    # html.Div(id="Required Interest Rate"),
-
-                ],)
-                ,width=4)
+                    ]), width=4
+                )
             ]#, style={'display': 'inline-block'}
             ),
+        dbc.Row([
+
+            dbc.Col(html.Div(children=[
+                dbc.Button("Set Alert", 
+                    size='lg',
+                    color="success", 
+                    id="setAlert")
+                ], style={'padding-top':'35px'})),
+            dbc.Col(
+                html.Div(children=[
+                    html.Div("Monthly Savings"),
+                    html.Div("Total Savings over life of loan"),
+                    html.Div("Time to break even"),
+                    html.Div("Cash Required"),
+                    html.Div("Pay off at X months slower"),
+                ]), width=5),
+            dbc.Col(html.Div(children=[
+                    html.Div(id="monthly_payment"),
+                    html.Div(id="minimum_potential_payment"),
+                ]), width=5),
+
+            ], style={'backgroundColor': 'gray', "width":"100%"}),
         dbc.Row(
             [
                 dbc.Col(html.Div(children=[
-                    dcc.Graph(id='monthly_payment_graph')
-                ])),
+                    dcc.Graph(id='monthly_payment_graph'),
+                    dcc.Markdown('''
+                        ##### How to read this graph
+                        This graph shows your monthly mortgage payment compared to a given interest rate.  The blue line is the relationship based on your original mortgage and the red line is based on your current remaining principal.  The black dotted line is your current monthly payment and interest rate.  The green dotted line shows your target monthly payment and the required interest rate to achieve the target monthly payment.  It is very possible to get a lower monthly payment with a higher interest rate, however it may not be the most efficient.
+
+                        ''')
+                ]), width=4),
                 dbc.Col(html.Div(children=[
                     dcc.Graph(id='future_payment_graph'),
-                ])),
+                    dcc.Markdown('''
+                        ##### How to read this graph
+                        This graph shows the life of your current and refinancing loans over time.  It displays the amount of principal remaining on the loan on the y-axis against the term month on the x-axis.  The solid blue line is the value of your loan to date.  The dotted blue line is where your loan would have been if you did not refinance.  The green line is refinancing scenario.  The vertical red line shows at which point you break even from the cost of refinancing.
+                        ''')
+                ]), width=4),
                 dbc.Col(html.Div(children=[
                     dcc.Graph(id='efficient_frontier_graph'),
-                ])),
+                    dcc.Markdown('''
+                        ##### How to read this graph
+                        This graph identifies if your target refinancing scenario results in you paying less interest over the entire life time of your loan, including the costs to refinance.  This can be viewed as the efficient frontier of the refinancing loan based on the term month you are into your loan the target interest rate.  Below the green line and you are making a pure financial better decision since you will be paying less overall for your loan over its lifetime.  Above the green line you are paying more interest over the lifetime of your loan.  However, there may be situations where you may be ok paying more interest.  One of these situations would be where you need to lower your monthly payment.
+
+                        ''')
+                ]), width=4),
             ]#,
             #style={'display': 'inline-block'}
             )
@@ -289,9 +322,9 @@ def create_staged_value_plot(principal,
                             y='monthly_payment', 
                             title='Monthly Payment by Interest Rate'):
     df = create_mortage_range(principal, current_term)
-    print("Staged value plot")
-    print(df)
-    print("++++")
+    # print("Staged value plot")
+    # print(df)
+    # print("++++")
     dfc = create_mortage_range(remaining_principal, target_term)
 
     # target_interest_rate_current = find_target_interest_rate(principal, term, target_monthly_payment)
@@ -360,6 +393,15 @@ def create_staged_value_plot(principal,
                 yref='y',
     )
     
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=-0.4,
+        xanchor="left",
+        x=0),
+        title="Monthly Payment by Interest Rate",
+        )
+
     return fig
 
 
@@ -370,20 +412,20 @@ def understand_mortgage_extension(original_principal,
                                   original_term,
                                   remaining_term, 
                                   new_term):
-    print("variable values")
-    print(original_principal, 
-          remaining_principal, 
-          original_rate, 
-          new_rate,
-          original_term,
-          remaining_term, 
-          new_term)
-    print("----")
+    # print("variable values")
+    # print(original_principal, 
+    #       remaining_principal, 
+    #       original_rate, 
+    #       new_rate,
+    #       original_term,
+    #       remaining_term, 
+    #       new_term)
+    # print("----")
 
     df_original = create_mortgage_table(original_principal, original_rate, original_term)
-    print("original",df_original)
+    # print("original",df_original)
     df_refi = create_mortgage_table(remaining_principal, new_rate, new_term)
-    print("refi", df_refi)
+    # print("refi", df_refi)
     df_refi['month'] = df_refi['month'] + remaining_term
     
     df_original_pre = df_original[df_original['month']<=remaining_term]
@@ -448,8 +490,7 @@ def eff_graph(eff,current_month, target_rate):
     fig = px.area(eff, 
                 x='month', 
                 y='interest_rate', 
-                color_discrete_sequence=['green'], 
-                title="Line of Total Interest Break Even",
+                color_discrete_sequence=['green'],
                 )
 
     fig.add_shape(type='line',
@@ -470,6 +511,15 @@ def eff_graph(eff,current_month, target_rate):
         text='Current Target',
         textposition="top center"
         ))
+
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=-0.4,
+        xanchor="left",
+        x=0),
+        title="Line of Total Interest Break Even",
+        )
     return fig
 
 if __name__ == "__main__":
