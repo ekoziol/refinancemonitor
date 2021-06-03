@@ -91,11 +91,11 @@ app.layout = dbc.Container([
                 ], style={'padding-top':'35px'})),
             dbc.Col(
                 html.Div(children=[
-                    html.Div("Monthly Savings"),
-                    html.Div("Total Savings over life of loan"),
-                    html.Div("Time to break even"),
-                    html.Div("Cash Required"),
-                    html.Div("Pay off at X months slower"),
+                    html.Div(id="monthly_payment_reduction"),
+                    html.Div(id="total_loan_savings"),
+                    html.Div(id="break_even"),
+                    html.Div(id="cash_required"),
+                    html.Div(id="slower_payoff_months"),
                 ]), width=5),
             dbc.Col(html.Div(children=[
                     html.Div(id="monthly_payment"),
@@ -137,22 +137,77 @@ app.layout = dbc.Container([
 
 @app.callback(
     Output("monthly_payment", "children"),
-    # Output("minimum_potential_payment", "children"),
-    Input("current_principal", "value"),
-    Input("current_rate", "value"),
-    Input("current_term", "value"),
-)
-def update_monthly_payment(current_principal, current_rate, current_term):
-    return u'Monthly Payment {}'.format(calc_loan_monthly_payment(current_principal, current_rate, current_term))
-
-@app.callback(
     Output("minimum_potential_payment", "children"),
+    Output("monthly_payment_reduction", "children"),
+    Output("total_loan_savings", "children"),
+    Output("break_even", "children"),
+    Output("cash_required", "children"),
+    Output("slower_payoff_months", "children"),
     Input("current_principal", "value"),
     Input("current_rate", "value"),
     Input("current_term", "value"),
+    Input("target_rate", "value"),
+    Input("target_term", "value"),
+    Input("target_monthly_payment", "value"),
+    Input("refi_cost", "value"),
+    Input("remaining_term", "value"),
+    Input("remaining_principal", "value")
 )
-def update_minimum_potential_payment(current_principal, current_rate, current_term):
-    return u'Minimum Potential Monthly Payment {}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
+def update_summary_info(current_principal, 
+                        current_rate, 
+                        current_term,
+                        target_rate,
+                        target_term,
+                        target_monthly_payment,
+                        refi_cost,
+                        remaining_term,
+                        remaining_principal
+                        ):
+
+    monthly_payment = u'Original Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, current_rate, current_term))
+    min_monthly_payment = u'Minimum Potential (0% Interest) Original Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
+
+    additional_months = target_term - remaining_term
+    cash_required = refi_cost
+
+    original_interest_calc = ipmt_total(current_rate, current_term, current_principal)
+    refi_interest_calc = ipmt_total(target_rate, target_rate, target_term)
+
+    total_savings_calc = original_interest_calc - refi_interest_calc
+
+    original_payment_calc = calc_loan_monthly_payment(current_principal, current_rate, current_term)
+    refi_payment_calc = calc_loan_monthly_payment(remaining_principal, target_rate, target_term)
+    monthly_savings_calc = original_payment_calc - refi_payment_calc
+    month_break_even_calc = time_to_even(refi_cost, monthly_savings_calc)
+
+
+    monthly_savings = u'Monthly Payment Reduction: ${:,.2f}'.format(monthly_savings_calc)
+    total_savings = u'Total Savings over Loan Life: ${:,.2f}'.format(total_savings_calc)
+    month_break_even = u'Months to Break Even: {:,.0f} months'.format(month_break_even_calc)
+    cash_required = u'Cash Required: ${:,.2f}'.format(cash_required)
+    additional_months = u'Additional Months to Payoff Beyond Original Date: {} months'.format(additional_months) 
+
+    return monthly_payment, min_monthly_payment, monthly_savings, total_savings, month_break_even, cash_required, additional_months 
+
+
+# @app.callback(
+#     Output("monthly_payment", "children"),
+#     # Output("minimum_potential_payment", "children"),
+#     Input("current_principal", "value"),
+#     Input("current_rate", "value"),
+#     Input("current_term", "value"),
+# )
+# def update_monthly_payment(current_principal, current_rate, current_term):
+#     return u'Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, current_rate, current_term))
+
+# @app.callback(
+#     Output("minimum_potential_payment", "children"),
+#     Input("current_principal", "value"),
+#     Input("current_rate", "value"),
+#     Input("current_term", "value"),
+# )
+# def update_minimum_potential_payment(current_principal, current_rate, current_term):
+#     return u'Minimum Potential Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
 
 
 def create_staged_value_plot(principal, remaining_principal, term, x='rate', y='monthly_payment', title='Monthly Payment by Interest Rate'):
@@ -510,6 +565,24 @@ def eff_graph(eff,current_month, target_rate):
         name='Current Target',
         text='Current Target',
         textposition="top center"
+        ))
+
+    fig.add_trace(go.Scatter(
+        x=[25],
+        y=[0.0025],
+        mode='text',
+        name='',
+        text='Pay Less in Interest',
+        textposition="top right"
+        ))
+
+    fig.add_trace(go.Scatter(
+        x=[0.97*negative_month],
+        y=[max_rate-0.00125],
+        mode='text',
+        name='',
+        text='Pay More in Interest',
+        textposition="bottom left"
         ))
 
     fig.update_layout(legend=dict(

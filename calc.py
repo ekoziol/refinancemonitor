@@ -86,3 +86,5 @@ def ipmt_total(rate, term, principal, per=None):
 def get_per(months):
     return np.arange(months) + 1
 
+def time_to_even(cost, monthly_savings):
+    return np.ceil(cost/monthly_savings)
