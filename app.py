@@ -364,6 +364,10 @@ def create_value_plot(principal,
                 yref='y'
     )
 
+
+    fig.update_xaxes(title_text='Interest Rate')
+    fig.update_yaxes(title_text='Monthly Payment')
+
     return fig
 
 
@@ -455,6 +459,13 @@ def create_staged_value_plot(principal,
         xanchor="left",
         x=0),
         title="Monthly Payment by Interest Rate",
+        xaxis=dict(
+            tickformat=',.2%',
+            title_text='Interest Rate',
+            ),
+        yaxis=dict(
+            title_text='Monthly Payment',
+            ),
         )
 
     return fig
@@ -503,10 +514,14 @@ def understand_mortgage_extension(original_principal,
         y=-0.4,
         xanchor="left",
         x=0),
-        title="Refinance Payoff Scenario"
+        title="Refinance Payoff Scenario",
+        xaxis=dict(
+            title_text='Principal Remaining on Mortgage',
+            ),
+        yaxis=dict(
+            title_text='Month Since Origination',
+            )
         )
-    
-    
     return fig
 
 
@@ -592,7 +607,15 @@ def eff_graph(eff,current_month, target_rate):
         xanchor="left",
         x=0),
         title="Line of Total Interest Break Even",
+        xaxis=dict(
+            tickformat=',.2%',
+            title_text='Month Since Origination'
+            ),
+        yaxis=dict(
+            title_text='Refinance Interest Rate'
+            ),
         )
+
     return fig
 
 if __name__ == "__main__":
