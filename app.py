@@ -608,10 +608,10 @@ def eff_graph(eff,current_month, target_rate):
         x=0),
         title="Line of Total Interest Break Even",
         xaxis=dict(
-            tickformat=',.2%',
             title_text='Month Since Origination'
             ),
         yaxis=dict(
+            tickformat=',.2%',
             title_text='Refinance Interest Rate'
             ),
         )
