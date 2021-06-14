@@ -15,9 +15,11 @@ import plotly.graph_objects as go
 
 from calc import *
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+# external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, 
+                external_stylesheets=[dbc.themes.BOOTSTRAP],
+                title='Refinance Monitor')
 server = app.server
 app.config.suppress_callback_exceptions = True
 # money = FormatTemplate.money(2)
@@ -53,7 +55,7 @@ app.layout = dbc.Container([
                 html.H2("Current State of Mortgage Info"),
 
                 html.P("Remaining Principal"),
-                dcc.Input(id="remaining_principal", type="number", placeholder="Remaining Principal", value=220446.5, debounce = True),
+                dcc.Input(id="remaining_principal", type="number", placeholder="Remaining Principal", value=385868.05, debounce = True),
                 html.Br(),
 
                 html.P("Remaining Term in Months (20 years = 240 months)"),
@@ -91,15 +93,15 @@ app.layout = dbc.Container([
                 ], style={'padding-top':'35px'})),
             dbc.Col(
                 html.Div(children=[
-                    html.Div(id="monthly_payment_reduction"),
-                    html.Div(id="total_loan_savings"),
-                    html.Div(id="break_even"),
-                    html.Div(id="cash_required"),
-                    html.Div(id="slower_payoff_months"),
+                    dcc.Markdown(id="monthly_payment_reduction"),
+                    dcc.Markdown(id="total_loan_savings"),
+                    dcc.Markdown(id="break_even"),
+                    dcc.Markdown(id="cash_required"),
+                    dcc.Markdown(id="slower_payoff_months"),
                 ]), width=5),
             dbc.Col(html.Div(children=[
-                    html.Div(id="monthly_payment"),
-                    html.Div(id="minimum_potential_payment"),
+                    dcc.Markdown(id="monthly_payment"),
+                    dcc.Markdown(id="minimum_potential_payment"),
                 ]), width=5),
 
             ], style={'backgroundColor': 'gray', "width":"100%"}),
@@ -164,8 +166,8 @@ def update_summary_info(current_principal,
                         remaining_principal
                         ):
 
-    monthly_payment = u'Original Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, current_rate, current_term))
-    min_monthly_payment = u'Minimum Potential (0% Interest) Original Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
+    monthly_payment = u'**Original Monthly Payment:** ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, current_rate, current_term))
+    min_monthly_payment = u'**Minimum Potential (0% Interest) Original Monthly Payment:** ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
 
     additional_months = target_term - remaining_term
     cash_required = refi_cost
@@ -181,11 +183,11 @@ def update_summary_info(current_principal,
     month_break_even_calc = time_to_even(refi_cost, monthly_savings_calc)
 
 
-    monthly_savings = u'Monthly Payment Reduction: ${:,.2f}'.format(monthly_savings_calc)
-    total_savings = u'Total Savings over Loan Life: ${:,.2f}'.format(total_savings_calc)
-    month_break_even = u'Months to Break Even: {:,.0f} months'.format(month_break_even_calc)
-    cash_required = u'Cash Required: ${:,.2f}'.format(cash_required)
-    additional_months = u'Additional Months to Payoff Beyond Original Date: {} months'.format(additional_months) 
+    monthly_savings = u'**Monthly Payment Reduction:** ${:,.2f}'.format(monthly_savings_calc)
+    total_savings = u'**Total Savings over Loan Life:** ${:,.2f}'.format(total_savings_calc)
+    month_break_even = u'**Months to Break Even:** {:,.0f} months'.format(month_break_even_calc)
+    cash_required = u'**Cash Required:** ${:,.2f}'.format(cash_required)
+    additional_months = u'**Additional Months to Payoff Beyond Original Date:** {} months'.format(additional_months) 
 
     return monthly_payment, min_monthly_payment, monthly_savings, total_savings, month_break_even, cash_required, additional_months 
 
@@ -492,10 +494,11 @@ def understand_mortgage_extension(original_principal,
     # print("original",df_original)
     df_refi = create_mortgage_table(remaining_principal, new_rate, new_term)
     # print("refi", df_refi)
-    df_refi['month'] = df_refi['month'] + remaining_term
+    additional_months = (original_term - remaining_term)
+    df_refi['month'] = df_refi['month'] + additional_months
     
-    df_original_pre = df_original[df_original['month']<=remaining_term]
-    df_original_post = df_original[df_original['month']>remaining_term]
+    df_original_pre = df_original[df_original['month']<=additional_months]
+    df_original_post = df_original[df_original['month']>additional_months]
     
     fig = px.line(df_original_pre, x='month', y='amount_remaining')
     fig.append_trace({'x':df_refi['month'],
@@ -516,11 +519,12 @@ def understand_mortgage_extension(original_principal,
         x=0),
         title="Refinance Payoff Scenario",
         xaxis=dict(
-            title_text='Principal Remaining on Mortgage',
+            title_text='Month Since Origination',
             ),
         yaxis=dict(
-            title_text='Month Since Origination',
-            )
+            title_text='Principal Remaining on Mortgage',
+            ),
+
         )
     return fig
 
@@ -608,11 +612,11 @@ def eff_graph(eff,current_month, target_rate):
         x=0),
         title="Line of Total Interest Break Even",
         xaxis=dict(
-            title_text='Month Since Origination'
+            title_text='Month Since Origination',
             ),
         yaxis=dict(
             tickformat=',.2%',
-            title_text='Refinance Interest Rate'
+            title_text='Refinance Interest Rate',
             ),
         )
 
