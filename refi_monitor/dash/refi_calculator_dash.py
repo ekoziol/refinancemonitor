@@ -186,7 +186,7 @@ def init_callbacks(dash_app):
         cash_required = refi_cost
 
         original_interest_calc = ipmt_total(current_rate, current_term, current_principal)
-        refi_interest_calc = ipmt_total(target_rate, target_rate, target_term)
+        refi_interest_calc = ipmt_total(target_rate, target_term, remaining_principal)
 
         total_savings_calc = original_interest_calc - refi_interest_calc
 
