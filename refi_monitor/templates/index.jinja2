@@ -1,0 +1,13 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<div class="card">
+  <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo" />
+  <h1 class="site-title">{{ title }}</h1>
+  <p class="subtitle">We monitor the mortgage markets so you don't have to.</p>
+  <a href="/calculator/" class="dash-link">
+    <span>Refinance Calculator</span>
+    <i class="fas fa-arrow-right"></i>
+  </a>
+</div>
+{% endblock %}
