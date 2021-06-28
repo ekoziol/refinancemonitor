@@ -1,1 +1,1 @@
-web: gunicorn refi_monitor.wsgi
+web: gunicorn refi-alert.wsgi
