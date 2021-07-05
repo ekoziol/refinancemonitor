@@ -162,7 +162,12 @@ def init_dashboard(server):
                                             size='lg',
                                             color="success",
                                             id="setAlert",
-                                        )
+                                            href="/setalert",
+                                        ),
+                                        dcc.Markdown(
+                                            'Want to relax and let us monitor the best'
+                                            ' time for you to refinance? Set an alert!'
+                                        ),
                                     ],
                                     style={'padding-top': '35px'},
                                 )
@@ -242,7 +247,21 @@ def init_dashboard(server):
                         # style={'display': 'inline-block'}
                     ),
                 ],
-            )
+            ),
+            dcc.Store('s_original_monthly_payment'),
+            dcc.Store('s_minimum_monthly_payment'),
+            dcc.Store('s_monthly_savings'),
+            dcc.Store('s_total_loan_savings'),
+            dcc.Store('s_months_paid'),
+            dcc.Store('s_original_interest'),
+            dcc.Store('s_refi_monthly_payment'),
+            dcc.Store('s_refi_interest'),
+            dcc.Store('s_month_to_even_simple'),
+            dcc.Store('s_month_to_even_interest'),
+            dcc.Store('s_original_mortgage_range'),
+            dcc.Store('sdf_refi_mortgage_range'),
+            dcc.Store('sdf_recoup_data'),
+            dcc.Store(''),
         ],
         fluid=True,
     )

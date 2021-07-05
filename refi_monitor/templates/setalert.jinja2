@@ -1,0 +1,57 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<div class="card">
+  <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo" />
+  <h1 class="site-title">{{ title }}</h1>
+  <p class="subtitle">Let's set your alert so you can rest easy</p>
+</div>
+<div class="order">
+  <form>
+    <!-- Alert Info -->
+    <label for="alert_type">Pick Alert Type</label><br>
+    <input type="radio" id="alert_payment" name="alert_type" value="Monthly_Payment">
+    <label for="alert_payment">Monthly Payment Alert</label><br>
+    <input type="radio" id="alert_interest" name="alert_type" value="Interest_Rate">
+    <label for="alert_payment">Interest Rate Alert</label><br><br>
+
+    <label for="target_payment">Target Monthly Payment:</label><br>
+    <span>$</span><input type="text" id="target_payment" name="target_payment"><br><br>
+
+    <label for="target_payment">Target Interest Rate:</label><br>
+    <input type="number" min="1" max="100" step=0.125 id="target_interest"/><span>%</span><br><br>
+
+    <label for="target_term">Target Term:</label><br>
+    <span>$</span><input type="text" id="target_term" name="target_term"><br><br>
+
+    <label for="refi_cost">Estimated Refinance Costs <br/> (generally 2-5% of loan amount):</label><br>
+    <span>$</span><input type="text" id="refi_cost" name="refi_cost"><br><br>
+
+
+    <!-- Original Mortgage Info -->
+    <label for="original_principal">Original Mortgage Principal:</label><br>
+    <span>$</span><input type="text" id="original_principal" name="original_principal"><br><br>
+
+    <label for="remaining_principal">Remaining Mortgage Principal:</label><br>
+    <span>$</span><input type="text" id="remaining_principal" name="remaining_principal"><br><br>
+
+    <label for="original_term">Original Mortgage Term:</label><br>
+    <input type="text" id="original_term" name="original_term"><span>months</span><br><br>
+
+    <label for="remaining_term">Remaining Mortgage Term:</label><br>
+    <input type="text" id="remaining_term" name="remaining_term"><span>months</span><br><br>
+
+    <label for="original_interest">Original Interest Rate:</label><br>
+    <input type="number" min="1" max="100" step=0.125 id="original_interest"/><span>%</span><br><br>
+
+    <!-- Customer Info -->
+    <label for="zip_code">Zip Code:</label><br>
+    <span></span><input type="text" id="zip_code" name="zip_code"><br><br>
+
+    <label for="credit_score">Credit Score:</label><br>
+    <input type="number" min="300" max="850" step=1 id="credit_score"/><span></span><br><br>
+
+    <input type='submit' value="Order Alert" />
+  </form>
+</div>
+{% endblock %}
