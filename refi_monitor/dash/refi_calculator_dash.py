@@ -162,7 +162,8 @@ def init_dashboard(server):
                                             size='lg',
                                             color="success",
                                             id="setAlert",
-                                            href="/setalert",
+                                            href="/setalert/",
+                                            external_link=True,
                                         ),
                                         dcc.Markdown(
                                             'Want to relax and let us monitor the best'
