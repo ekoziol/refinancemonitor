@@ -331,10 +331,33 @@ def init_callbacks(dash_app):
         sdf_original_mortgage_range = create_mortage_range(principal, term)
         sdf_refi_mortgage_range = create_mortage_range(remaining_principal, target_term)
 
+        current_monthly_payment = df.loc[
+            df['rate'] <= current_rate, 'monthly_payment'
+        ].max()
+
+        target_monthly_payment = dfc.loc[
+            dfc['rate'] <= target_interest_rate_refi, 'monthly_payment'
+        ].max()
+
         target_interest_rate_refi = find_target_interest_rate(
             remaining_principal, target_term, target_monthly_payment
         )
 
+        df_original = create_mortgage_table(
+            original_principal, original_rate, original_term
+        )
+        # print("original",df_original)
+        df_refi = create_mortgage_table(remaining_principal, new_rate, new_term)
+
+        additional_months = original_term - remaining_term
+        df_refi['month'] = df_refi['month'] + additional_months
+
+        df_original_pre = df_original[df_original['month'] <= additional_months]
+        df_original_post = df_original[df_original['month'] > additional_months]
+
+        df = calculate_recoup_data(
+            original_monthly_payment, refi_monthly_payment, target_term, refi_cost
+        )
 
         return(
             s_original_monthly_payment,
