@@ -259,10 +259,10 @@ def init_dashboard(server):
             dcc.Store('s_refi_interest'),
             dcc.Store('s_month_to_even_simple'),
             dcc.Store('s_month_to_even_interest'),
-            dcc.Store('s_original_mortgage_range'),
+            dcc.Store('sdf_original_mortgage_range'),
             dcc.Store('sdf_refi_mortgage_range'),
             dcc.Store('sdf_recoup_data'),
-            dcc.Store(''),
+            # dcc.Store(''),
         ],
         fluid=True,
     )
@@ -275,6 +275,82 @@ def init_dashboard(server):
 def init_callbacks(dash_app):
 
     # function needed for adding dash within flask since app is global
+    @dash_app.callback(
+            Output('s_original_monthly_payment', 'value'),
+            Output('s_minimum_monthly_payment', 'value'),
+            Output('s_monthly_savings', 'value'),
+            Output('s_total_loan_savings', 'value'),
+            Output('s_months_paid', 'value'),
+            Output('s_original_interest', 'value'),
+            Output('s_refi_monthly_payment', 'value'),
+            Output('s_refi_interest', 'value'),
+            Output('s_month_to_even_simple', 'value'),
+            Output('s_month_to_even_interest', 'value'),
+            Output('sdf_original_mortgage_range', 'value'),
+            Output('sdf_refi_mortgage_range', 'value'),
+            Output('sdf_recoup_data', 'value'),
+            Input("current_principal", "value"),
+            Input("current_rate", "value"),
+            Input("current_term", "value"),
+            Input("target_rate", "value"),
+            Input("target_term", "value"),
+            Input("target_monthly_payment", "value"),
+            Input("refi_cost", "value"),
+            Input("remaining_term", "value"),
+            Input("remaining_principal", "value")
+
+        )
+    def update_data_stores(
+            current_principal,
+            current_rate,
+            current_term,
+            target_rate,
+            target_term,
+            target_monthly_payment,
+            refi_cost,
+            remaining_term,
+            remaining_principal
+        ):
+        s_original_monthly_payment = calc_loan_monthly_payment(current_principal, current_rate, current_term)
+        s_minimum_monhtly_payment = calc_loan_monthly_payment(current_principal, 0.0, current_term)
+        s_months_paid = target_term - remaining_term
+
+        s_original_interest = ipmt_total(
+            current_rate, current_term, current_principal
+        )
+        s_refi_interest = ipmt_total(target_rate, target_term, remaining_principal)
+
+        s_total_loan_savings = s_original_interest - s_refi_interest - refi_cost
+
+        s_refi_monthly_payment = calc_loan_monthly_payment(
+            remaining_principal, target_rate, target_term
+        )
+        s_monthly_savings = s_original_monthly_payment - s_refi_monthly_payment
+        month_break_even_calc = time_to_even(refi_cost, s_monthly_savings)
+
+        sdf_original_mortgage_range = create_mortage_range(principal, term)
+        sdf_refi_mortgage_range = create_mortage_range(remaining_principal, target_term)
+
+        target_interest_rate_refi = find_target_interest_rate(
+            remaining_principal, target_term, target_monthly_payment
+        )
+
+
+        return(
+            s_original_monthly_payment,
+            s_minimum_monthly_payment,
+            s_monthly_savings,
+            s_total_loan_savings,
+            s_months_paid,
+            s_original_interest,
+            s_refi_monthly_payment,
+            s_refi_interest,
+            s_month_to_even_simple,
+            s_month_to_even_interest,
+            s_original_mortgage_range,
+            sdf_refi_mortgage_range,
+            sdf_recoup_data
+            )
 
     @dash_app.callback(
         Output("monthly_payment", "children"),
@@ -378,29 +454,30 @@ def init_callbacks(dash_app):
     # def update_minimum_potential_payment(current_principal, current_rate, current_term):
     #     return u'Minimum Potential Monthly Payment ${:,.2f}'.format(calc_loan_monthly_payment(current_principal, 0.0, current_term))
 
-    def create_staged_value_plot(
-        principal,
-        remaining_principal,
-        term,
-        x='rate',
-        y='monthly_payment',
-        title='Monthly Payment by Interest Rate',
-    ):
-        df = create_mortage_range(principal, term)
-        dfc = create_mortage_range(remaining_principal, term)
+    # def create_staged_value_plot(
+    #     principal,
+    #     remaining_principal,
+    #     term,
+    #     target_term
+    #     x='rate',
+    #     y='monthly_payment',
+    #     title='Monthly Payment by Interest Rate',
+    # ):
+    #     df = create_mortage_range(principal, term)
+    #     dfc = create_mortage_range(remaining_principal, target_term)
 
-        fig = px.line(df, x=x, y=y, title=title)
-        fig.append_trace(
-            {
-                'x': dfc[x],
-                'y': dfc[y],
-                'type': 'scatter',
-                'name': 'Remaining Principal',
-            },
-            1,
-            1,
-        )
-        return fig
+    #     fig = px.line(df, x=x, y=y, title=title)
+    #     fig.append_trace(
+    #         {
+    #             'x': dfc[x],
+    #             'y': dfc[y],
+    #             'type': 'scatter',
+    #             'name': 'Remaining Principal',
+    #         },
+    #         1,
+    #         1,
+    #     )
+    #     return fig
 
     # @dash_app.callback(
     #     Output("monthly_payment_graph", "figure"),
@@ -611,7 +688,6 @@ def init_callbacks(dash_app):
         # print("++++")
         dfc = create_mortage_range(remaining_principal, target_term)
 
-        # target_interest_rate_current = find_target_interest_rate(principal, term, target_monthly_payment)
         target_interest_rate_refi = find_target_interest_rate(
             remaining_principal, target_term, target_monthly_payment
         )
