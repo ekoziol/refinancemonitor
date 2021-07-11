@@ -61,6 +61,21 @@ def init_dashboard(server):
                             dbc.Col(
                                 html.Div(
                                     children=[
+                                        html.H1("Refinance Monitor"),
+                                        html.P(
+                                            "Use this tool to figure if refinancing is"
+                                            " right for you.  If so, set an alert for"
+                                            " us to track the mortgage markets for you"
+                                            " and we'll let you know when you can"
+                                            " refinance."
+                                        ),
+                                    ]
+                                ),
+                                width=3,
+                            ),
+                            dbc.Col(
+                                html.Div(
+                                    children=[
                                         html.H2("Refinancing Info"),
                                         html.P("Target Monthly Payment"),
                                         dcc.Input(
@@ -102,7 +117,7 @@ def init_dashboard(server):
                                         # html.Br(),
                                     ]
                                 ),
-                                width=4,
+                                width=3,
                             ),
                             dbc.Col(
                                 html.Div(
@@ -118,8 +133,11 @@ def init_dashboard(server):
                                         ),
                                         html.Br(),
                                         html.P(
-                                            "Remaining Term in Months (20 years = 240"
-                                            " months)"
+                                            [
+                                                "Remaining Term in Months",
+                                                html.Br(),
+                                                "(20 years= 240 months)",
+                                            ]
                                         ),
                                         dcc.Input(
                                             id="remaining_term",
@@ -131,7 +149,7 @@ def init_dashboard(server):
                                         html.Br(),
                                     ]
                                 ),
-                                width=4,
+                                width=3,
                             ),
                             dbc.Col(
                                 html.Div(
@@ -156,8 +174,11 @@ def init_dashboard(server):
                                         ),
                                         html.Br(),
                                         html.P(
-                                            "Original Term in Months (30 year = 360"
-                                            " months)"
+                                            [
+                                                "Original Term in Months",
+                                                html.Br(),
+                                                "(30 year = 360 months)",
+                                            ]
                                         ),
                                         dcc.Input(
                                             id="current_term",
@@ -169,7 +190,7 @@ def init_dashboard(server):
                                         html.Br(),
                                     ]
                                 ),
-                                width=4,
+                                width=3,
                             ),
                         ],  # , style={'display': 'inline-block'}
                     ),
@@ -521,7 +542,7 @@ def init_callbacks(dash_app):
         return x
 
     @dash_app.callback(
-        Output("st_cash_required", 'children'), Input('refi_cost', 'data')
+        Output("st_cash_required", 'children'), Input('refi_cost', 'value')
     )
     def update_store_cash_required(x):
         return '${:,.2f}'.format(x)
