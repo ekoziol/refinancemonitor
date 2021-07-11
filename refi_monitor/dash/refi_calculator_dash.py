@@ -86,21 +86,21 @@ def init_dashboard(server):
                                             debounce=True,
                                         ),
                                         html.Br(),
-                                        html.P("Target Term"),
-                                        dcc.Input(
-                                            id="target_term",
-                                            type="number",
-                                            placeholder="Target Term",
-                                            value=360,
-                                            debounce=True,
-                                        ),
-                                        html.Br(),
                                         html.P("Target Interest Rate"),
                                         dcc.Input(
                                             id="target_rate",
                                             type="number",
                                             placeholder="Target Interest Rate",
                                             value=0.02,
+                                            debounce=True,
+                                        ),
+                                        html.Br(),
+                                        html.P("Target Term"),
+                                        dcc.Input(
+                                            id="target_term",
+                                            type="number",
+                                            placeholder="Target Term",
+                                            value=360,
                                             debounce=True,
                                         ),
                                         html.Br(),
@@ -1022,7 +1022,7 @@ def init_callbacks(dash_app):
             legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="left", x=0),
             title="Monthly Payment by Interest Rate",
             xaxis=dict(tickformat=',.2%', title_text='Interest Rate'),
-            yaxis=dict(title_text='Monthly Payment'),
+            yaxis=dict(tickformat='$,.2', title_text='Monthly Payment'),
         )
 
         return fig
@@ -1175,8 +1175,9 @@ def init_callbacks(dash_app):
 
         fig.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="left", x=0),
+            showlegend=False,
             title="Line of Total Interest Break Even",
-            xaxis=dict(title_text='Month Since Origination'),
+            xaxis=dict(title_text='Month Since Original Origination'),
             yaxis=dict(tickformat=',.2%', title_text='Refinance Interest Rate'),
         )
 
@@ -1232,10 +1233,12 @@ def init_callbacks(dash_app):
 
         fig.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="left", x=0),
+            showlegend=False,
             title="Breakeven Point",
             xaxis=dict(title_text='Months After Refinance Occurs'),
-            yaxis=dict(title_text='Amount Saved'),
+            yaxis=dict(tickformat='$,.2', title_text='Amount Saved'),
         )
+
         return fig
 
 
