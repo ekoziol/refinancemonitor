@@ -5,25 +5,30 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_table
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from dash.exceptions import PreventUpdate
 
 # from dash_table import DataTable, FormatTemplate
 
 from ..calc import *
 import re
 
-# external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+
 def init_dashboard(server):
 
     dash_app = dash.Dash(
         __name__,
         server=server,
-        external_stylesheets=[dbc.themes.BOOTSTRAP],
+        external_stylesheets=[
+            dbc.themes.BOOTSTRAP,
+            '/static/dist/css/style.css'  # ,
+            # 'dash-style.css',
+        ],
         routes_pathname_prefix='/calculator/',
         title='Refinance Monitor',
     )
@@ -32,12 +37,27 @@ def init_dashboard(server):
     # money = FormatTemplate.money(2)
 
     dash_app.layout = dbc.Container(
-        [
+        className="dash_app",
+        children=[
             html.Div(
                 className='main',
                 children=[
+                    dcc.Store(id='s_original_monthly_payment'),
+                    dcc.Store(id='s_minimum_monthly_payment'),
+                    dcc.Store(id='s_monthly_savings'),
+                    dcc.Store(id='s_total_loan_savings'),
+                    dcc.Store(id='s_months_paid'),
+                    dcc.Store(id='s_original_interest'),
+                    dcc.Store(id='s_refi_monthly_payment'),
+                    dcc.Store(id='s_refi_interest'),
+                    dcc.Store(id='s_month_to_even_simple'),
+                    dcc.Store(id='s_month_to_even_interest'),
+                    dcc.Store(id='sdf_original_mortgage_range'),
+                    dcc.Store(id='sdf_refi_mortgage_range'),
+                    dcc.Store(id='sdf_recoup_data'),
                     dbc.Row(
-                        [
+                        className="input_row",
+                        children=[
                             dbc.Col(
                                 html.Div(
                                     children=[
@@ -78,7 +98,8 @@ def init_dashboard(server):
                                             debounce=True,
                                         ),
                                         html.Br(),
-                                        # html.Div(id="Required Interest Rate"),
+                                        # html.P("test", id="dcc_test"),
+                                        # html.Br(),
                                     ]
                                 ),
                                 width=4,
@@ -150,10 +171,11 @@ def init_dashboard(server):
                                 ),
                                 width=4,
                             ),
-                        ]  # , style={'display': 'inline-block'}
+                        ],  # , style={'display': 'inline-block'}
                     ),
                     dbc.Row(
-                        [
+                        className="summary_table",
+                        children=[
                             dbc.Col(
                                 html.Div(
                                     children=[
@@ -164,6 +186,7 @@ def init_dashboard(server):
                                             id="setAlert",
                                             href="/setalert/",
                                             external_link=True,
+                                            className="alert_button",
                                         ),
                                         dcc.Markdown(
                                             'Want to relax and let us monitor the best'
@@ -173,32 +196,36 @@ def init_dashboard(server):
                                     style={'padding-top': '35px'},
                                 )
                             ),
+                            # dbc.Col(
+                            #     html.Div(
+                            #         children=[
+                            #             dcc.Markdown(id="monthly_payment_reduction"),
+                            #             dcc.Markdown(id="total_loan_savings"),
+                            #             dcc.Markdown(id="break_even"),
+                            #             dcc.Markdown(id="cash_required"),
+                            #             dcc.Markdown(id="slower_payoff_months"),
+                            #         ]
+                            #     ),
+                            #     width=5,
+                            # ),
+                            # dbc.Col(
+                            #     html.Div(
+                            #         children=[
+                            #             dcc.Markdown(id="monthly_payment"),
+                            #             dcc.Markdown(id="minimum_potential_payment"),
+                            #         ]
+                            #     ),
+                            #     width=5,
+                            # ),
                             dbc.Col(
-                                html.Div(
-                                    children=[
-                                        dcc.Markdown(id="monthly_payment_reduction"),
-                                        dcc.Markdown(id="total_loan_savings"),
-                                        dcc.Markdown(id="break_even"),
-                                        dcc.Markdown(id="cash_required"),
-                                        dcc.Markdown(id="slower_payoff_months"),
-                                    ]
-                                ),
-                                width=5,
-                            ),
-                            dbc.Col(
-                                html.Div(
-                                    children=[
-                                        dcc.Markdown(id="monthly_payment"),
-                                        dcc.Markdown(id="minimum_potential_payment"),
-                                    ]
-                                ),
-                                width=5,
+                                html.Div(children=[generate_summary_table()]), width=10
                             ),
                         ],
-                        style={'backgroundColor': 'gray', "width": "100%"},
+                        # style={'backgroundColor': 'gray', "width": "100%"},
                     ),
                     dbc.Row(
-                        [
+                        className="graph_row",
+                        children=[
                             dbc.Col(
                                 html.Div(
                                     children=[
@@ -248,20 +275,7 @@ def init_dashboard(server):
                         # style={'display': 'inline-block'}
                     ),
                 ],
-            ),
-            dcc.Store('s_original_monthly_payment'),
-            dcc.Store('s_minimum_monthly_payment'),
-            dcc.Store('s_monthly_savings'),
-            dcc.Store('s_total_loan_savings'),
-            dcc.Store('s_months_paid'),
-            dcc.Store('s_original_interest'),
-            dcc.Store('s_refi_monthly_payment'),
-            dcc.Store('s_refi_interest'),
-            dcc.Store('s_month_to_even_simple'),
-            dcc.Store('s_month_to_even_interest'),
-            dcc.Store('sdf_original_mortgage_range'),
-            dcc.Store('sdf_refi_mortgage_range'),
-            dcc.Store('sdf_recoup_data'),
+            )
             # dcc.Store(''),
         ],
         fluid=True,
@@ -276,90 +290,129 @@ def init_callbacks(dash_app):
 
     # function needed for adding dash within flask since app is global
     @dash_app.callback(
-            Output('s_original_monthly_payment', 'value'),
-            Output('s_minimum_monthly_payment', 'value'),
-            Output('s_monthly_savings', 'value'),
-            Output('s_total_loan_savings', 'value'),
-            Output('s_months_paid', 'value'),
-            Output('s_original_interest', 'value'),
-            Output('s_refi_monthly_payment', 'value'),
-            Output('s_refi_interest', 'value'),
-            Output('s_month_to_even_simple', 'value'),
-            Output('s_month_to_even_interest', 'value'),
-            Output('sdf_original_mortgage_range', 'value'),
-            Output('sdf_refi_mortgage_range', 'value'),
-            Output('sdf_recoup_data', 'value'),
-            Input("current_principal", "value"),
-            Input("current_rate", "value"),
-            Input("current_term", "value"),
-            Input("target_rate", "value"),
-            Input("target_term", "value"),
-            Input("target_monthly_payment", "value"),
-            Input("refi_cost", "value"),
-            Input("remaining_term", "value"),
-            Input("remaining_principal", "value")
-
-        )
+        Output('s_original_monthly_payment', 'data'),
+        Output('s_minimum_monthly_payment', 'data'),
+        Output('s_monthly_savings', 'data'),
+        Output('s_total_loan_savings', 'data'),
+        Output('s_months_paid', 'data'),
+        Output('s_original_interest', 'data'),
+        Output('s_refi_monthly_payment', 'data'),
+        Output('s_refi_interest', 'data'),
+        Output('s_month_to_even_simple', 'data'),
+        Output('s_month_to_even_interest', 'data'),
+        Output('sdf_original_mortgage_range', 'data'),
+        Output('sdf_refi_mortgage_range', 'data'),
+        Output('sdf_recoup_data', 'data'),
+        Input("current_principal", "value"),
+        Input("current_rate", "value"),
+        Input("current_term", "value"),
+        Input("target_rate", "value"),
+        Input("target_term", "value"),
+        Input("target_monthly_payment", "value"),
+        Input("refi_cost", "value"),
+        Input("remaining_term", "value"),
+        Input("remaining_principal", "value"),
+    )
     def update_data_stores(
-            current_principal,
-            current_rate,
-            current_term,
-            target_rate,
-            target_term,
-            target_monthly_payment,
-            refi_cost,
-            remaining_term,
-            remaining_principal
-        ):
-        s_original_monthly_payment = calc_loan_monthly_payment(current_principal, current_rate, current_term)
-        s_minimum_monhtly_payment = calc_loan_monthly_payment(current_principal, 0.0, current_term)
+        current_principal,
+        current_rate,
+        current_term,
+        target_rate,
+        target_term,
+        target_monthly_payment,
+        refi_cost,
+        remaining_term,
+        remaining_principal,
+    ):
+        # if (
+        #     current_principal is None
+        #     or current_rate is None
+        #     or current_term is None
+        #     or target_rate is None
+        #     or target_term is None
+        #     or target_monthly_payment is None
+        #     or refi_cost is None
+        #     or remaining_term is None
+        #     or remaining_principal is None
+        # ):
+        #     raise PreventUpdate
+
+        print("/" * 20)
+        print("\\" * 20)
+        print("Storing Data in data stores")
+        print("\\" * 20)
+        print("/" * 20)
+        s_original_monthly_payment = calc_loan_monthly_payment(
+            current_principal, current_rate, current_term
+        )
+        print("current_principal: ", current_principal)
+        print("current_rate: ", current_rate)
+        print("current_term: ", current_term)
+        print('monthly payment: ', s_original_monthly_payment)
+
+        s_minimum_monthly_payment = calc_loan_monthly_payment(
+            current_principal, 0.0, current_term
+        )
         s_months_paid = target_term - remaining_term
 
-        s_original_interest = ipmt_total(
-            current_rate, current_term, current_principal
-        )
+        # try:
+        s_original_interest = ipmt_total(current_rate, current_term, current_principal)
         s_refi_interest = ipmt_total(target_rate, target_term, remaining_principal)
 
         s_total_loan_savings = s_original_interest - s_refi_interest - refi_cost
+        # except:
+        # s_original_interest = 7
+        # s_refi_interest = 8
+        # s_total_loan_savings = 9
 
         s_refi_monthly_payment = calc_loan_monthly_payment(
             remaining_principal, target_rate, target_term
         )
         s_monthly_savings = s_original_monthly_payment - s_refi_monthly_payment
-        month_break_even_calc = time_to_even(refi_cost, s_monthly_savings)
+        s_month_to_even_simple = time_to_even(refi_cost, s_monthly_savings)
 
-        sdf_original_mortgage_range = create_mortage_range(principal, term)
-        sdf_refi_mortgage_range = create_mortage_range(remaining_principal, target_term)
+        sdf_original_mortgage_range = create_mortage_range(
+            current_principal, current_term
+        ).to_dict('records')
+        sdf_refi_mortgage_range = create_mortage_range(
+            remaining_principal, target_term
+        ).to_dict('records')
 
-        current_monthly_payment = df.loc[
-            df['rate'] <= current_rate, 'monthly_payment'
-        ].max()
+        s_month_to_even_interest = 0
+        sdf_recoup_data = None
+        # current_monthly_payment = df.loc[
+        #     df['rate'] <= current_rate, 'monthly_payment'
+        # ].max()
 
-        target_monthly_payment = dfc.loc[
-            dfc['rate'] <= target_interest_rate_refi, 'monthly_payment'
-        ].max()
+        # target_monthly_payment = dfc.loc[
+        #     dfc['rate'] <= target_interest_rate_refi, 'monthly_payment'
+        # ].max()
 
-        target_interest_rate_refi = find_target_interest_rate(
-            remaining_principal, target_term, target_monthly_payment
-        )
+        # target_interest_rate_refi = find_target_interest_rate(
+        #     remaining_principal, target_term, target_monthly_payment
+        # )
 
-        df_original = create_mortgage_table(
-            original_principal, original_rate, original_term
-        )
-        # print("original",df_original)
-        df_refi = create_mortgage_table(remaining_principal, new_rate, new_term)
+        # df_original = create_mortgage_table(
+        #     original_principal, original_rate, original_term
+        # )
+        # # print("original",df_original)
+        # df_refi = create_mortgage_table(remaining_principal, new_rate, new_term)
 
-        additional_months = original_term - remaining_term
-        df_refi['month'] = df_refi['month'] + additional_months
+        # additional_months = original_term - remaining_term
+        # df_refi['month'] = df_refi['month'] + additional_months
 
-        df_original_pre = df_original[df_original['month'] <= additional_months]
-        df_original_post = df_original[df_original['month'] > additional_months]
+        # df_original_pre = df_original[df_original['month'] <= additional_months]
+        # df_original_post = df_original[df_original['month'] > additional_months]
 
-        df = calculate_recoup_data(
-            original_monthly_payment, refi_monthly_payment, target_term, refi_cost
-        )
-
-        return(
+        # df = calculate_recoup_data(
+        #     original_monthly_payment, refi_monthly_payment, target_term, refi_cost
+        # )
+        print("/" * 40)
+        print("\\" * 40)
+        print("Completed Data Stores")
+        print("\\" * 40)
+        print("/" * 40)
+        return (
             s_original_monthly_payment,
             s_minimum_monthly_payment,
             s_monthly_savings,
@@ -370,10 +423,170 @@ def init_callbacks(dash_app):
             s_refi_interest,
             s_month_to_even_simple,
             s_month_to_even_interest,
-            s_original_mortgage_range,
+            sdf_original_mortgage_range,
             sdf_refi_mortgage_range,
-            sdf_recoup_data
-            )
+            sdf_recoup_data,
+        )
+
+    # @dash_app.callback(Output("s_months_paid", 'data'), Input("refi_cost", 'value'))
+    # def check_dcc2(m):
+    #     return str(m)
+
+    # @dash_app.callback(Output("dcc_test", 'children'), Input("s_months_paid", 'data'))
+    # def check_dcc(m):
+    #     print("BAKASGJDASNGEANUSADNGVASDNDASVISD")
+    #     print("---", m)
+    #     print("BAKASGJDASNGEANUSADNGVASDNDASVISD"[::-1])
+    #     return m
+
+    # def echo(x):
+    #     return x
+
+    # summary_outputs = [
+    #     "st_original_payment",
+    #     "st_theoretical_min_payment",
+    #     "st_refi_payment",
+    #     "st_monthly_savings_simple",
+    #     "st_breakeven_simple",
+    #     "st_breakeven_interest",
+    #     "st_loan_life_savings",
+    #     "st_additional_months",
+    #     "st_cash_required",
+    # ]
+    # summary_inputs = [
+    #     's_original_monthly_payment',
+    #     's_minimum_monthly_payment',
+    #     's_monthly_savings',
+    #     's_total_loan_savings',
+    #     's_months_paid',
+    #     's_original_interest',
+    #     's_refi_monthly_payment',
+    #     's_refi_interest',
+    #     's_month_to_even_simple',
+    #     's_month_to_even_interest',
+    #     "refi_cost",
+    # ]
+
+    @dash_app.callback(
+        Output("st_original_payment", 'children'),
+        Input('s_original_monthly_payment', 'data'),
+    )
+    def update_store_monthly_payment(x):
+        return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_theoretical_min_payment", 'children'),
+        Input('s_minimum_monthly_payment', 'data'),
+    )
+    def update_store_min_payment(x):
+        return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_refi_payment", 'children'), Input('s_refi_monthly_payment', 'data')
+    )
+    def update_store_refi_payment(x):
+        return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_monthly_savings", 'children'), Input('s_monthly_savings', 'data')
+    )
+    def update_store_monthly_savings(x):
+        return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_breakeven_simple", 'children'),
+        Input('s_month_to_even_simple', 'data'),
+    )
+    def update_store_breakeven_simple(x):
+        return x
+
+    @dash_app.callback(
+        Output("st_breakeven_interest", 'children'),
+        Input('s_month_to_even_interest', 'data'),
+    )
+    def update_store_breakeven_interest(x):
+        return x
+
+    @dash_app.callback(
+        Output("st_loan_life_savings", 'children'),
+        Input('s_total_loan_savings', 'data'),
+    )
+    def update_store_loan_savings(x):
+        return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_additional_months", 'children'), Input('s_months_paid', 'data')
+    )
+    def update_store_additional_months(x):
+        return x
+
+    @dash_app.callback(
+        Output("st_cash_required", 'children'), Input('refi_cost', 'data')
+    )
+    def update_store_cash_required(x):
+        return '${:,.2f}'.format(x)
+
+    # @dash_app.callback(
+    #     # Output("st_original_payment", 'children'),
+    #     Output("st_theoretical_min_payment", 'children'),
+    #     Output("st_refi_payment", 'children'),
+    #     Output("st_monthly_savings_simple", 'children'),
+    #     Output("st_breakeven_simple", 'children'),
+    #     Output("st_breakeven_interest", 'children'),
+    #     Output("st_loan_life_savings", 'children'),
+    #     Output("st_additional_months", 'children'),
+    #     Output("st_cash_required", 'children'),
+    #     # Input('s_original_monthly_payment', 'data'),
+    #     Input('s_minimum_monthly_payment', 'data'),
+    #     Input('s_monthly_savings', 'data'),
+    #     Input('s_total_loan_savings', 'data'),
+    #     Input('s_months_paid', 'data'),
+    #     Input('s_original_interest', 'data'),
+    #     Input('s_refi_monthly_payment', 'data'),
+    #     Input('s_refi_interest', 'data'),
+    #     Input('s_month_to_even_simple', 'data'),
+    #     Input('s_month_to_even_interest', 'data'),
+    #     Input("refi_cost", "value"),
+    # )
+    # def update_summary_table(
+    #     # s_original_monthly_payment,
+    #     s_minimum_monthly_payment,
+    #     s_monthly_savings,
+    #     s_total_loan_savings,
+    #     s_months_paid,
+    #     s_original_interest,
+    #     s_refi_monthly_payment,
+    #     s_refi_interest,
+    #     s_month_to_even_simple,
+    #     s_month_to_even_interest,
+    #     refi_cost,
+    # ):
+    #     print("+" * 20)
+    #     print("-" * 20)
+    #     print("fired summary update callback")
+    #     print("-" * 20)
+    #     print("+" * 20)
+    #     st_original_payment = s_original_monthly_payment
+    #     st_theoretical_min_payment = s_minimum_monthly_payment
+    #     st_refi_payment = s_refi_monthly_payment
+    #     st_monthly_savings_simple = s_monthly_savings
+    #     st_breakeven_interest = s_month_to_even_simple
+    #     st_breakeven_interest = s_month_to_even_interest
+    #     st_loan_life_savings = s_total_loan_savings
+    #     st_additional_months = s_months_paid
+    #     st_cash_required = refi_cost
+
+    #     return (
+    #         # st_original_payment,
+    #         st_theoretical_min_payment,
+    #         st_refi_payment,
+    #         st_monthly_savings_simple,
+    #         st_monthly_savings,
+    #         st_monthly_savings_interest,
+    #         st_loan_life_savings,
+    #         st_additional_months,
+    #         st_cash_required,
+    #     )
 
     @dash_app.callback(
         Output("monthly_payment", "children"),
@@ -1003,3 +1216,64 @@ def init_callbacks(dash_app):
             yaxis=dict(title_text='Amount Saved'),
         )
         return fig
+
+
+def generate_summary_table():
+    summary_table_row1 = html.Tr(
+        [
+            html.Th("Original Monthly Payment"),
+            html.Td("-", id="st_original_payment"),
+            html.Th("Theoretical Minimum Original Payment (0% interest)"),
+            html.Td("-", id="st_theoretical_min_payment"),
+        ]
+    )
+    summary_table_row2 = html.Tr(
+        [
+            html.Th("Refinance Monthly Payment"),
+            html.Td("-", id="st_refi_payment"),
+            html.Th("Months to Breakeven (monthly savings)"),
+            html.Td("-", id="st_breakeven_simple"),
+        ]
+    )
+
+    summary_table_row3 = html.Tr(
+        [
+            html.Th("Monthly Savings"),
+            html.Td("-", id="st_monthly_savings"),
+            html.Th("Months to Breakeven (interest savings only)"),
+            html.Td("-", id="st_breakeven_interest"),
+        ]
+    )
+
+    summary_table_row4 = html.Tr(
+        [
+            html.Th("Savings Over Loan Life"),
+            html.Td("-", id="st_loan_life_savings"),
+            html.Th("Additional Payment Length from Original Start Date"),
+            html.Td("-", id="st_additional_months"),
+        ]
+    )
+
+    summary_table_row5 = html.Tr(
+        [
+            html.Th("Cash Required"),
+            html.Td("-", id="st_cash_required"),
+            html.Th(""),
+            html.Td(""),
+        ]
+    )
+
+    summary_table_body = [
+        html.Tbody(
+            [
+                summary_table_row1,
+                summary_table_row2,
+                summary_table_row3,
+                summary_table_row4,
+                summary_table_row5,
+            ]
+        )
+    ]
+    summary_table = dbc.Table(summary_table_body)
+
+    return summary_table

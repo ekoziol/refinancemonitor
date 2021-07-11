@@ -12,3 +12,4 @@ plotly==4.14.3
 gunicorn
 numpy-financial
 python-dotenv
+flask-assets

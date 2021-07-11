@@ -7,8 +7,9 @@
   <title>{{ title }}</title>
   <meta property="og:site_name" content="{{ title }}"/>
   <meta property="og:type" content="website"/>
-  <meta property="og:title" content="{{ title }} - Refinance Monitor"/>
+  <meta property="og:title" content="{{ title }} - Refinance"/>
   <meta property="og:description" content="{{ description }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}" />
 <!--   <meta property="og:url" content="https://plotlydashflask.hackersandslackers.app/"/>
   <meta name="twitter:title" content="{{ title }}"/>
   <meta name="twitter:description" content="{{ description }}"/>
@@ -24,7 +25,7 @@
   <meta name="HandheldFriendly" content="True" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}" />
+
   <link rel="stylesheet" href="https://use.typekit.net/uqq2lcv.css">
   <link rel="shortcut icon" href="{{ url_for('static', filename='dist/img/favicon.png') }}" type="image/x-icon" />
   <link
