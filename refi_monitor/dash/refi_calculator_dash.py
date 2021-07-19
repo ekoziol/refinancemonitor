@@ -48,6 +48,7 @@ def init_dashboard(server):
                     dcc.Store(id='s_total_loan_savings'),
                     dcc.Store(id='s_months_paid'),
                     dcc.Store(id='s_original_interest'),
+                    dcc.Store(id='s_target_rate'),
                     dcc.Store(id='s_refi_monthly_payment'),
                     dcc.Store(id='s_refi_interest'),
                     dcc.Store(id='s_month_to_even_simple'),
@@ -69,6 +70,10 @@ def init_dashboard(server):
                                             " and we'll let you know when you can"
                                             " refinance."
                                         ),
+                                        html.P(
+                                            "Confused on how to read the plots?  Scroll"
+                                            " down for assistance"
+                                        ),
                                     ]
                                 ),
                                 width=3,
@@ -77,13 +82,29 @@ def init_dashboard(server):
                                 html.Div(
                                     children=[
                                         html.H2("Refinancing Info"),
+                                        dcc.RadioItems(
+                                            id='target_toggle',
+                                            options=[
+                                                {
+                                                    'label': '  Monthly Payment   ',
+                                                    'value': 'payment',
+                                                },
+                                                {
+                                                    'label': '  Interest Rate',
+                                                    'value': 'interest',
+                                                },
+                                            ],
+                                            value='payment',
+                                            className='toggle',
+                                        ),
                                         html.P("Target Monthly Payment"),
                                         dcc.Input(
                                             id="target_monthly_payment",
                                             type="number",
                                             placeholder="Target Monthly Payment",
-                                            value=2000,
+                                            value=1500,
                                             debounce=True,
+                                            disabled=False,
                                         ),
                                         html.Br(),
                                         html.P("Target Interest Rate"),
@@ -93,6 +114,7 @@ def init_dashboard(server):
                                             placeholder="Target Interest Rate",
                                             value=0.02,
                                             debounce=True,
+                                            disabled=False,
                                         ),
                                         html.Br(),
                                         html.P("Target Term"),
@@ -128,7 +150,7 @@ def init_dashboard(server):
                                             id="remaining_principal",
                                             type="number",
                                             placeholder="Remaining Principal",
-                                            value=385868.05,
+                                            value=364631.66,
                                             debounce=True,
                                         ),
                                         html.Br(),
@@ -143,7 +165,7 @@ def init_dashboard(server):
                                             id="remaining_term",
                                             type="number",
                                             placeholder="Remaining Term",
-                                            value=240,
+                                            value=300,
                                             debounce=True,
                                         ),
                                         html.Br(),
@@ -160,7 +182,7 @@ def init_dashboard(server):
                                             id="current_principal",
                                             type="number",
                                             placeholder="Original Principal",
-                                            value=510000,
+                                            value=400000,
                                             debounce=True,
                                         ),
                                         html.Br(),
@@ -169,7 +191,7 @@ def init_dashboard(server):
                                             id="current_rate",
                                             type="number",
                                             placeholder="Current Interest Rate",
-                                            value=0.02875,
+                                            value=0.045,
                                             debounce=True,
                                         ),
                                         html.Br(),
@@ -324,6 +346,7 @@ def init_callbacks(dash_app):
         Output('sdf_original_mortgage_range', 'data'),
         Output('sdf_refi_mortgage_range', 'data'),
         Output('sdf_recoup_data', 'data'),
+        Output('s_target_rate', 'data'),
         Input("current_principal", "value"),
         Input("current_rate", "value"),
         Input("current_term", "value"),
@@ -379,8 +402,19 @@ def init_callbacks(dash_app):
         # try:
         s_original_interest = ipmt_total(current_rate, current_term, current_principal)
         s_refi_interest = ipmt_total(target_rate, target_term, remaining_principal)
+        s_original_interest_to_date = ipmt_total(
+            current_rate,
+            current_term,
+            current_principal,
+            per=np.arange(0, current_term - remaining_term),
+        )
 
-        s_total_loan_savings = s_original_interest - s_refi_interest - refi_cost
+        s_total_loan_savings = (
+            s_original_interest
+            - s_refi_interest
+            - refi_cost
+            - s_original_interest_to_date
+        )
         # except:
         # s_original_interest = 7
         # s_refi_interest = 8
@@ -447,6 +481,7 @@ def init_callbacks(dash_app):
             sdf_original_mortgage_range,
             sdf_refi_mortgage_range,
             sdf_recoup_data,
+            target_rate,
         )
 
     # @dash_app.callback(Output("s_months_paid", 'data'), Input("refi_cost", 'value'))
@@ -489,6 +524,37 @@ def init_callbacks(dash_app):
     # ]
 
     @dash_app.callback(
+        Output("target_monthly_payment", 'disabled'),
+        Output("target_rate", 'disabled'),
+        Input("target_toggle", 'value'),
+    )
+    def disable_target(toggle):
+        if toggle == 'interest':
+            return True, False
+        else:
+            return False, True
+
+    @dash_app.callback(
+        Output("target_monthly_payment", 'value'),
+        Output("target_rate", 'value'),
+        Input("target_monthly_payment", 'disabled'),
+        Input("target_monthly_payment", 'value'),
+        Input("target_rate", 'value'),
+        Input("target_term", "value"),
+        Input("remaining_principal", "value"),
+    )
+    def update_targets(tmp_state, payment, rate, term, principal):
+        # True = find interest rate
+        # False = find monthly payment
+        if tmp_state == False:
+            return payment, find_target_interest_rate(principal, term, payment)
+        else:
+            return (
+                np.round(calc_loan_monthly_payment(principal, rate, term), decimals=2),
+                rate,
+            )
+
+    @dash_app.callback(
         Output("st_original_payment", 'children'),
         Input('s_original_monthly_payment', 'data'),
     )
@@ -513,6 +579,12 @@ def init_callbacks(dash_app):
     )
     def update_store_monthly_savings(x):
         return '${:,.2f}'.format(x)
+
+    @dash_app.callback(
+        Output("st_target_rate", 'children'), Input('s_target_rate', 'data')
+    )
+    def update_target_interest_rate(x):
+        return '{:,.2f}%'.format(x * 100)
 
     @dash_app.callback(
         Output("st_breakeven_simple", 'children'),
@@ -957,7 +1029,12 @@ def init_callbacks(dash_app):
             dfc['rate'] <= target_interest_rate_refi, 'monthly_payment'
         ].max()
 
-        fig = px.line(df, x=x, y=y, title=title)
+        fig = px.line()
+        fig.append_trace(
+            {'x': df[x], 'y': df[y], 'type': 'scatter', 'name': 'Original Principal'},
+            1,
+            1,
+        )
         fig.append_trace(
             {
                 'x': dfc[x],
@@ -1190,6 +1267,12 @@ def init_callbacks(dash_app):
         df = calculate_recoup_data(
             original_monthly_payment, refi_monthly_payment, target_term, refi_cost
         )
+        print("original:", original_monthly_payment)
+        print("refi monthly:", refi_monthly_payment)
+        print("target_term:", target_term)
+        print("refi_cost:", refi_cost)
+        print("breakeven df:")
+        print(df)
         breakeven_month = df.loc[df["monthly_savings"] > 0, 'month'].min()
         graph_y_min = df['monthly_savings'].min()
         graph_y_max = df['monthly_savings'].max()
@@ -1255,8 +1338,8 @@ def generate_summary_table():
         [
             html.Th("Refinance Monthly Payment"),
             html.Td("-", id="st_refi_payment"),
-            html.Th("Months to Breakeven (monthly savings)"),
-            html.Td("-", id="st_breakeven_simple"),
+            html.Th("Refinance Interest Rate"),
+            html.Td("-", id="st_target_rate"),
         ]
     )
 
@@ -1264,17 +1347,17 @@ def generate_summary_table():
         [
             html.Th("Monthly Savings"),
             html.Td("-", id="st_monthly_savings"),
-            html.Th("Months to Breakeven (interest savings only)"),
-            html.Td("-", id="st_breakeven_interest"),
+            html.Th("Months to Breakeven (monthly savings)"),
+            html.Td("-", id="st_breakeven_simple"),
         ]
     )
 
     summary_table_row4 = html.Tr(
         [
-            html.Th("Savings Over Loan Life"),
+            html.Th("Interest Savings Over Loan Life"),
             html.Td("-", id="st_loan_life_savings"),
-            html.Th("Additional Payment Length from Original Start Date"),
-            html.Td("-", id="st_additional_months"),
+            html.Th("Months to Breakeven (interest savings only)"),
+            html.Td("-", id="st_breakeven_interest"),
         ]
     )
 
@@ -1282,8 +1365,8 @@ def generate_summary_table():
         [
             html.Th("Cash Required"),
             html.Td("-", id="st_cash_required"),
-            html.Th(""),
-            html.Td(""),
+            html.Th("Additional Payment Length from Original Start Date"),
+            html.Td("-", id="st_additional_months"),
         ]
     )
 
