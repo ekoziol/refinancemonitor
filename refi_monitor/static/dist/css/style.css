@@ -1,0 +1,39 @@
+.input_row {
+    background-color: #C7F9CC;
+}
+
+.summary_table {
+    background-color: #A4D6AF;
+}
+
+.alert_button {
+    background-color: #22577A !important;
+}
+
+/* simulate radiobutton appearance using pseudoselector */
+input[type="radio"] + label:before {
+  content: "";
+  /* create custom radiobutton appearance */
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  padding: 3px;
+  margin-right: 5px;
+  /* background-color only for content */
+  background-clip: content-box;
+  border: 1px solid #bbbbbb;
+  background-color: #e7e6e7;
+  border-radius: 50%;
+}
+
+/* appearance of checked radiobutton */
+input[type="radio"]:checked + label:before {
+  background-color: red;
+}
+
+/* resetting default box-sizing */
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}

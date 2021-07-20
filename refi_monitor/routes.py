@@ -12,7 +12,7 @@ def home():
         'index.jinja2',
         title='Refinance Monitor',
         description='Set it and forget it!',
-        # template='home-template',
+        template='home-template',
         body="We watch mortgage rates so you don't have to",
     )
 
@@ -24,7 +24,7 @@ def setalert():
         'setalert.jinja2',
         title='Set Refinance Alert',
         description='Set your alert!',
-        # template='home-template',
+        template='home-template',
         body="We watch mortgage rates so you don't have to",
     )
 
