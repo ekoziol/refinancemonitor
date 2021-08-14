@@ -158,7 +158,7 @@ def init_dashboard(server):
                                             [
                                                 "Remaining Term in Months",
                                                 html.Br(),
-                                                "(20 years= 240 months)",
+                                                "(20 years = 240 months)",
                                             ]
                                         ),
                                         dcc.Input(
@@ -292,7 +292,7 @@ def init_dashboard(server):
                                         dcc.Markdown(
                                             '''
                             ##### How to read this graph
-                            This graph shows the life of your current and refinancing loans over time.  It displays the amount of principal remaining on the loan on the y-axis against the term month on the x-axis.  The solid blue line is the value of your loan to date.  The dotted blue line is where your loan would have been if you did not refinance.  The green line is refinancing scenario.  The vertical red line shows at which point you break even from the cost of refinancing.
+                            This graph shows at which point you will break even on the cost of refinancing.  Two methods are shown.  The first method, in blue, is the simple method based on monthly savings.  In the monthly savings method, the difference in your original mortgage monthly payment and your refinance monthly payment are used to determine at what point you will breakeven from refinance costs.  The second method, in green, compares your savings only based on the improvement in interest that you are having.  This compares the total interest over the life of the loan from your original mortgage to the total interest over the life of your proposed refinance loan and uses the difference between the two as the monthly savings.  The difference in interest is then compared to both the cost of refinancing and the interest that you have paid to date.  If you are refinancing to a rate that costs more in total loan interest, then this line will be negative and there will be no break even point from this method.
                             '''
                                         ),
                                     ]
@@ -433,8 +433,23 @@ def init_callbacks(dash_app):
             remaining_principal, target_term
         ).to_dict('records')
 
-        s_month_to_even_interest = 0
-        sdf_recoup_data = None
+        sdf_recoup_data = calculate_recoup_data(
+            s_original_monthly_payment, 
+            s_refi_monthly_payment, 
+            target_term, 
+            refi_cost,
+            target_rate,
+            remaining_principal,
+            current_term,
+            current_rate,
+            current_principal,
+            s_months_paid
+        )
+        month_to_even_interest = sdf_recoup_data.loc[sdf_recoup_data["interest_refi_savings"] > 0, 'month'].min()
+        s_month_to_even_interest = month_to_even_interest if month_to_even_interest>0 else "Not Possible"
+        
+        sdf_recoup_data=sdf_recoup_data.to_dict('records')
+
         # current_monthly_payment = df.loc[
         #     df['rate'] <= current_rate, 'monthly_payment'
         # ].max()
@@ -908,28 +923,29 @@ def init_callbacks(dash_app):
 
     @dash_app.callback(
         Output("breakeven_graph", "figure"),
-        Input("current_principal", "value"),
-        Input("current_rate", "value"),
-        Input("current_term", "value"),
-        Input("target_monthly_payment", "value"),
+        # Input("current_principal", "value"),
+        # Input("current_rate", "value"),
+        # Input("current_term", "value"),
+        # Input("target_monthly_payment", "value"),
+        Input("sdf_recoup_data",'data'),
         Input("target_term", "value"),
-        Input("refi_cost", "value"),
+    #     Input("refi_cost", "value"),
+    #     Input("target_rate", "value"),
+    #     Input("remaining_principal", "value"),
+    #     Input("s_months_paid", "data"),
     )
     def breakeven_calc(
-        current_principal,
-        current_rate,
-        current_term,
-        refi_monthly_payment,
-        target_term,
-        refi_cost,
+        sdf_recoup_data,
+        target_term
     ):
 
-        original_monthly_payment = calc_loan_monthly_payment(
-            current_principal, current_rate, current_term
-        )
+        # original_monthly_payment = calc_loan_monthly_payment(
+        #     current_principal, current_rate, current_term
+        # )
 
         return create_breakeven_graph(
-            original_monthly_payment, refi_monthly_payment, target_term, refi_cost
+            sdf_recoup_data,
+            target_term
         )
 
     # need to show target monthly payment
@@ -1241,8 +1257,8 @@ def init_callbacks(dash_app):
 
         fig.add_trace(
             go.Scatter(
-                x=[0.97 * negative_month],
-                y=[max_rate - 0.00125],
+                x=[0.8 * negative_month],
+                y=[max_rate - 0.005],
                 mode='text',
                 name='',
                 text='Pay More in Interest',
@@ -1255,36 +1271,58 @@ def init_callbacks(dash_app):
             showlegend=False,
             title="Line of Total Interest Break Even",
             xaxis=dict(title_text='Month Since Original Origination'),
-            yaxis=dict(tickformat=',.2%', title_text='Refinance Interest Rate'),
+            yaxis=dict(tickformat=',.3%', title_text='Refinance Interest Rate'),
         )
 
         return fig
 
     def create_breakeven_graph(
-        original_monthly_payment, refi_monthly_payment, target_term, refi_cost
+        sdf_recoup_data,
+        target_term
     ):
+        df = pd.DataFrame.from_records(sdf_recoup_data)
+        # df = calculate_recoup_data(
+        #     original_monthly_payment, 
+        #     refi_monthly_payment, 
+        #     target_term, 
+        #     refi_cost,
+        #     target_rate,
+        #     remaining_principal,
+        #     original_term,
+        #     original_rate,
+        #     original_principal,
+        #     paid_term
+        # )
+        # print("original:", original_monthly_payment)
+        # print("refi monthly:", refi_monthly_payment)
+        # print("target_term:", target_term)
+        # print("refi_cost:", refi_cost)
+        # print("breakeven df:")
+        # print(df)
+        breakeven_month_simple = df.loc[df["monthly_savings"] > 0, 'month'].min()
+        breakeven_month_interest = df.loc[df["interest_refi_savings"] > 0, 'month'].min()
+        graph_y_min = np.min([df['monthly_savings'].min(),df['interest_refi_savings'].min()])
+        graph_y_max = np.max([df['monthly_savings'].max(), df['interest_refi_savings'].max()])
 
-        df = calculate_recoup_data(
-            original_monthly_payment, refi_monthly_payment, target_term, refi_cost
-        )
-        print("original:", original_monthly_payment)
-        print("refi monthly:", refi_monthly_payment)
-        print("target_term:", target_term)
-        print("refi_cost:", refi_cost)
-        print("breakeven df:")
-        print(df)
-        breakeven_month = df.loc[df["monthly_savings"] > 0, 'month'].min()
-        graph_y_min = df['monthly_savings'].min()
-        graph_y_max = df['monthly_savings'].max()
-
-        fig = px.line(df, x='month', y='monthly_savings')
+        fig = px.line()
 
         # vertical line
         fig.add_shape(
             type='line',
-            x0=breakeven_month,
+            x0=breakeven_month_simple,
             y0=graph_y_min,
-            x1=breakeven_month,
+            x1=breakeven_month_simple,
+            y1=graph_y_max,
+            line=dict(color='Blue', dash='dash'),
+            xref='x',
+            yref='y',
+        )
+
+        fig.add_shape(
+            type='line',
+            x0=breakeven_month_interest,
+            y0=graph_y_min,
+            x1=breakeven_month_interest,
             y1=graph_y_max,
             line=dict(color='Green', dash='dash'),
             xref='x',
@@ -1305,18 +1343,53 @@ def init_callbacks(dash_app):
 
         fig.add_trace(
             go.Scatter(
-                x=[breakeven_month + 2],
+                x=[breakeven_month_simple + 2],
                 y=[graph_y_max],
                 mode='text',
                 name='',
-                text='Break Even Point: {} months'.format(breakeven_month),
+                text='Monthly Savings <br>Break Even Point: <br>{} months'.format(breakeven_month_simple),
                 textposition="bottom right",
             )
         )
 
+        fig.append_trace(
+            {
+                'x': df['month'],
+                'y': df['monthly_savings'],
+                'type': 'scatter',
+                'name': 'Simple Savings',
+                'line':{'color':'blue'}
+            },
+            1,
+            1,
+        )
+
+        fig.append_trace(
+            {
+                'x': df['month'],
+                'y': df['interest_refi_savings'],
+                'type': 'scatter',
+                'name': 'Interest Only Savings',
+            },
+            1,
+            1,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=[breakeven_month_interest + 2],
+                y=[0.5*graph_y_min],
+                mode='text',
+                name='',
+                text='Interest Savings <br>Break Even Point: <br>{} months'.format(breakeven_month_interest),
+                textposition="bottom right",
+            )
+        )
+
+
         fig.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="left", x=0),
-            showlegend=False,
+            showlegend=True,
             title="Breakeven Point",
             xaxis=dict(title_text='Months After Refinance Occurs'),
             yaxis=dict(tickformat='$,.2', title_text='Amount Saved'),

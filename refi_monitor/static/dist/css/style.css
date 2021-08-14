@@ -1,3 +1,10 @@
+p {
+  margin-bottom: 5px;
+}
+
+input {
+  margin-bottom: 10px;
+}
 .input_row {
     background-color: #C7F9CC;
 }
