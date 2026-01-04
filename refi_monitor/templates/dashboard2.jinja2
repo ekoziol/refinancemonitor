@@ -1,0 +1,125 @@
+{% extends "layout.jinja2" %}
+
+
+
+{% block content %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dist/css/main.css') }}" type="text/css">
+<link rel="stylesheet" href="{{ url_for('static', filename='dist/css/dashboard.css') }}" type="text/css">
+
+<!-- <link rel="stylesheet" href="https://use.typekit.net/sus7rlu.css"> -->
+{% endblock %}
+
+
+<div class="banner">
+
+  {% if current_user.is_authenticated %}
+    <a href="{{ url_for('main_bp.logout') }}" class="button" id="logout">Log out</a>
+  {% endif %}
+
+  <h1>{{ body }}</h1>
+
+</div>
+
+
+
+<br/>
+<br/>
+<div>
+  <a href="{{ url_for('main_bp.logout') }}" class="button" id="calculator">Access the Calculator</a>
+</div>
+<table class="mortgagetable relative">
+
+  {% for ma in mortgage_alerts%}
+  {% set m = ma[0] %}
+  {% set a = ma[1] %}
+  <tr class="mortgagerow"> 
+    <td class="mortgageinfotable">
+      <table class="mortgageinfotable">
+      <tr class="inforow mortgageinforow">
+        <td><b>Mortgage Name: </b></td><td>{{ m.name }}</td>
+      </tr>
+      <tr class="inforow mortgageinforow">
+        <td><b>Original Principal:  </b></td><td>${{ m.original_principal }}</td>
+      </tr>
+      <tr class="inforow mortgageinforow">
+        <td><b>Original Interest Rate: </b></td><td>{{ m.original_interest_rate*100 }}%</td>
+      </tr>
+      <tr class="inforow mortgageinforow">
+        <td><b>Original Term: </b></td><td>{{ m.original_term }}</td>
+      </tr>
+      <tr class="inforow mortgageinforow">
+        <td><b>Remaining Principal: </b></td><td>${{ m.remaining_principal }}</td>
+      </tr>
+      <tr class="inforow mortgageinforow">
+        <td><b>Remaining Term: </b></td><td>{{ m.remaining_term }}</td>
+      </tr>
+    </table>
+
+
+    {% if a is not none %}
+    <td class="alerttable">
+      <table class="alerttable">
+      <tr>{{a}}</tr>
+      <tr class="inforow alertinforow">
+        <td><b>Alert Type: </b></td><td>{{ a.alert_type }}</td>
+      </tr class="inforow alertinforow">
+      {% if a.alert_type == "Monthly Payment" %}
+      <tr class="inforow alertinforow">
+        <td><b>Target Monthly Payment: </b></td><td>${{ a.target_monthly_payment }}</td>
+      </tr>
+      {% elif a.alert_type == "Interest Rate" -%}
+      <tr class="inforow alertinforow">
+        <td><b>Target Interest Rate:  </b></td><td>{{ a.target_interest_rate }}%</td>
+        }
+      </tr>
+      {% endif %}
+      <tr class="inforow alertinforow">
+        <td><b>Target Term: </b></td><td>{{ a.target_term }} years</td>
+      </tr>
+      <tr class="inforow alertinforow">
+        <td><b>Estimate Refinance Cost: </b></td><td>${{ a.estimate_refinance_cost }}</td>
+      </tr>
+      <tr class="inforow alertinforow">
+        <td><b>Payment Status: </b></td><td>{{ a.payment_status }}</td>
+      </tr>
+    </table>
+    </td>
+
+    <td class="triggertable">
+      <table class="triggertable">
+        <tr class="inforow triggerinforow">
+          <td><b>Trigger Status: </b></td><td>${{ a.target_monthly_payment }}</td>
+        </tr>
+
+        <tr class="inforow triggerinforow">
+          <td><b>Last Trigger Date: </b></td><td>${{ a.target_monthly_payment }}</td>
+        </tr>
+
+        <tr class="inforow triggerinforow">
+          <td><b>Estimated Trigger Interest Rate: </b></td><td>${{ a.target_monthly_payment }}</td>
+        </tr> 
+
+        <tr class="inforow triggerinforow">
+          <td><b>Estimated Refi Monthly Payment if done now: </b></td><td>${{ a.target_monthly_payment }}</td>
+        </tr> 
+
+        <tr class="inforow triggerinforow">
+          <td><b>Estimated Current Principal Remaining: </b></td><td>${{ a.target_monthly_payment }}</td>
+        </tr> 
+      </table>
+    </td>
+
+    {% else %}
+    <td class="alerttable addalertsection">
+      <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}" class="button" id="addalert">+ Add Alert</a>
+      <p>You can add an alert for $120/year</p>
+    </td>
+    {% endif %}      
+  </tr>
+  {% endfor %}
+</table>
+<br/>
+<br/>
+<a href="{{url_for('mortgage_bp.addmortgage')}}" class="button" id="addmortgage">+ Add Mortgage</a>
+{% endblock %}
