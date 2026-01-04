@@ -25,6 +25,11 @@ class Config:
     TEMPLATES_FOLDER = "templates"
     COMPRESSOR_DEBUG = environ.get("COMPRESSOR_DEBUG")
 
+    SQLALCHEMY_DATABASE_URI = environ.get('SQLALCHEMY_DATABASE_URI')
+    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    STRIPE_API_KEY = environ.get("STRIPE_API_KEY")
 
 
 class ProdConfig(Config):
@@ -39,3 +44,5 @@ class DevConfig(Config):
     DEBUG = True
     TESTING = True
     DATABASE_URI = environ.get('DEV_DATABASE_URI')
+    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "@fullhuman/postcss-purgecss": "^4.0.3",
+    "postcss-cli": "^8.3.1",
+    "tailwindcss-cli": "^0.1.2"
+  },
+  "name": "refi-alert",
+  "description": "SaaS app for monitoring mortgage rates",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/ekoziol/refi-alert.git"
+  },
+  "author": "ekoziol",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/ekoziol/refi-alert/issues"
+  },
+  "homepage": "https://gitlab.com/ekoziol/refi-alert#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.3.4",
+    "postcss": "^8.3.6",
+    "tailwindcss": "^2.2.15"
+  }
+}

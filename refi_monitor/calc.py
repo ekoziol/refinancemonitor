@@ -122,10 +122,6 @@ def ipmt_total(rate, term, principal, per=None):
         per = np.arange(term) + 1
     return -1 * np.sum(npf.ipmt(rate / 12, per, term, principal))
 
-def ipmt_df(rate, term, principal, per=None):
-    if per is None:
-        per = np.arange(term) + 2
-    return -1 * npf.ipmt(rate / 12, per, term, principal)
 
 def get_per(months):
     return np.arange(months) + 1
@@ -135,11 +131,8 @@ def time_to_even(cost, monthly_savings):
     return np.ceil(cost / monthly_savings)
 
 
-def calculate_recoup_data_old(
-    original_monthly_payment, 
-    refi_monthly_payment, 
-    target_term, 
-    refi_cost
+def calculate_recoup_data(
+    original_monthly_payment, refi_monthly_payment, target_term, refi_cost
 ):
     # need to show both savings from change in monthly payment
     # and savings from pure interest
@@ -149,32 +142,5 @@ def calculate_recoup_data_old(
         'month'
     ] - refi_cost
     #     df['interest_savings'] =
-
-    return df
-
-def calculate_recoup_data(
-    original_monthly_payment, 
-    refi_monthly_payment, 
-    target_term, 
-    refi_cost,
-    target_rate,
-    remaining_principal,
-    original_term,
-    original_rate,
-    original_principal,
-    paid_term
-):
-    # need to show both savings from change in monthly payment
-    # and savings from pure interest
-
-    interest_paid = ipmt_total(original_rate, original_term, original_principal, per=np.arange(0,paid_term))
-    original_total_interest = ipmt_total(original_rate, original_term, original_principal, per=np.arange(0,original_term))
-    refi_total_interest = ipmt_total(target_rate, target_term, remaining_principal, per=np.arange(0,target_term))
-    df = pd.DataFrame({"month": range(0, target_term + 1)})
-    df['monthly_savings'] = (original_monthly_payment - refi_monthly_payment) * df['month'] - refi_cost
-    df['interest_refi'] = np.asarray([*ipmt_df(target_rate, target_term, remaining_principal), 0])
-    df['interest_refi_diff'] = (original_total_interest - refi_total_interest) * df['interest_refi']/refi_total_interest
-    df['interest_refi_sum'] = df['interest_refi_diff'].cumsum()
-    df['interest_refi_savings'] = df['interest_refi_sum'] - interest_paid - refi_cost
 
     return df

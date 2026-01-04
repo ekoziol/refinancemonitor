@@ -1,0 +1,112 @@
+
+{% extends "layout.jinja2" %}
+
+
+{% block content %}
+{% include 'forms.jinja2' %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='dist/img/logo.png') }}"
+        alt="logo"
+      />
+    </div>
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-warning">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert">
+          x
+        </button>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    {% if alert is none %}
+    <h1>Add Alert</h1>
+    <form method="POST" action="/addalert">
+    {% else %}
+    <h1>Edit Alert</h1>
+    <form method="POST" action="/editalert/{{alert.id}}">
+    {% endif %}
+
+      {{ form.csrf_token }}
+
+      <fieldset class="form-field alert_type">
+        {{ form.alert_type.label }}
+        {{ form.alert_type() }}
+        {% if form.alert_type.errors %}
+          <ul class="errors">
+            {% for error in form.alert_type.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field target_term">
+        {{ form.target_term.label }}
+        {{ form.target_term(placeholder='30') }}
+        {% if form.target_term.errors %}
+          <ul class="errors">
+            {% for error in form.target_term.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field target_monthly_payment">
+        {{ form.target_monthly_payment.label }}
+        {{ form.target_monthly_payment }}
+        {% if form.target_monthly_payment.errors %}
+          <ul class="errors">
+            {% for error in form.target_monthly_payment.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field target_interest_rate">
+        {{ form.target_interest_rate.label }}
+        {{ form.target_interest_rate }}
+        {% if form.target_interest_rate.errors %}
+          <ul class="errors">
+            {% for error in form.target_interest_rate.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field estimate_refinance_cost">
+        {{ form.estimate_refinance_cost.label }}
+        {{ form.estimate_refinance_cost }}
+        {% if form.estimate_refinance_cost.errors %}
+          <ul class="errors">
+            {% for error in form.estimate_refinance_cost.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field mortgage_id">
+        {{ form.mortgage_id(value=m_id) }}
+        {% if form.mortgage_id.errors %}
+          <ul class="errors">
+            {% for error in form.mortgage_id.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <div class="submit-button">
+        {{ form.submit}}
+      </div>
+
+    </form>
+
+  </div>
+
+
+{% endblock %}

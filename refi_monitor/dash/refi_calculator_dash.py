@@ -227,7 +227,7 @@ def init_dashboard(server):
                                             size='lg',
                                             color="success",
                                             id="setAlert",
-                                            href="/setalert/",
+                                            href="/addalert",
                                             external_link=True,
                                             className="alert_button",
                                         ),
@@ -434,21 +434,25 @@ def init_callbacks(dash_app):
         ).to_dict('records')
 
         sdf_recoup_data = calculate_recoup_data(
-            s_original_monthly_payment, 
-            s_refi_monthly_payment, 
-            target_term, 
+            s_original_monthly_payment,
+            s_refi_monthly_payment,
+            target_term,
             refi_cost,
             target_rate,
             remaining_principal,
             current_term,
             current_rate,
             current_principal,
-            s_months_paid
+            s_months_paid,
         )
-        month_to_even_interest = sdf_recoup_data.loc[sdf_recoup_data["interest_refi_savings"] > 0, 'month'].min()
-        s_month_to_even_interest = month_to_even_interest if month_to_even_interest>0 else "Not Possible"
-        
-        sdf_recoup_data=sdf_recoup_data.to_dict('records')
+        month_to_even_interest = sdf_recoup_data.loc[
+            sdf_recoup_data["interest_refi_savings"] > 0, 'month'
+        ].min()
+        s_month_to_even_interest = (
+            month_to_even_interest if month_to_even_interest > 0 else "Not Possible"
+        )
+
+        sdf_recoup_data = sdf_recoup_data.to_dict('records')
 
         # current_monthly_payment = df.loc[
         #     df['rate'] <= current_rate, 'monthly_payment'
@@ -927,26 +931,20 @@ def init_callbacks(dash_app):
         # Input("current_rate", "value"),
         # Input("current_term", "value"),
         # Input("target_monthly_payment", "value"),
-        Input("sdf_recoup_data",'data'),
+        Input("sdf_recoup_data", 'data'),
         Input("target_term", "value"),
-    #     Input("refi_cost", "value"),
-    #     Input("target_rate", "value"),
-    #     Input("remaining_principal", "value"),
-    #     Input("s_months_paid", "data"),
+        #     Input("refi_cost", "value"),
+        #     Input("target_rate", "value"),
+        #     Input("remaining_principal", "value"),
+        #     Input("s_months_paid", "data"),
     )
-    def breakeven_calc(
-        sdf_recoup_data,
-        target_term
-    ):
+    def breakeven_calc(sdf_recoup_data, target_term):
 
         # original_monthly_payment = calc_loan_monthly_payment(
         #     current_principal, current_rate, current_term
         # )
 
-        return create_breakeven_graph(
-            sdf_recoup_data,
-            target_term
-        )
+        return create_breakeven_graph(sdf_recoup_data, target_term)
 
     # need to show target monthly payment
     # calculate required interest rate
@@ -1276,15 +1274,12 @@ def init_callbacks(dash_app):
 
         return fig
 
-    def create_breakeven_graph(
-        sdf_recoup_data,
-        target_term
-    ):
+    def create_breakeven_graph(sdf_recoup_data, target_term):
         df = pd.DataFrame.from_records(sdf_recoup_data)
         # df = calculate_recoup_data(
-        #     original_monthly_payment, 
-        #     refi_monthly_payment, 
-        #     target_term, 
+        #     original_monthly_payment,
+        #     refi_monthly_payment,
+        #     target_term,
         #     refi_cost,
         #     target_rate,
         #     remaining_principal,
@@ -1300,9 +1295,15 @@ def init_callbacks(dash_app):
         # print("breakeven df:")
         # print(df)
         breakeven_month_simple = df.loc[df["monthly_savings"] > 0, 'month'].min()
-        breakeven_month_interest = df.loc[df["interest_refi_savings"] > 0, 'month'].min()
-        graph_y_min = np.min([df['monthly_savings'].min(),df['interest_refi_savings'].min()])
-        graph_y_max = np.max([df['monthly_savings'].max(), df['interest_refi_savings'].max()])
+        breakeven_month_interest = df.loc[
+            df["interest_refi_savings"] > 0, 'month'
+        ].min()
+        graph_y_min = np.min(
+            [df['monthly_savings'].min(), df['interest_refi_savings'].min()]
+        )
+        graph_y_max = np.max(
+            [df['monthly_savings'].max(), df['interest_refi_savings'].max()]
+        )
 
         fig = px.line()
 
@@ -1347,7 +1348,9 @@ def init_callbacks(dash_app):
                 y=[graph_y_max],
                 mode='text',
                 name='',
-                text='Monthly Savings <br>Break Even Point: <br>{} months'.format(breakeven_month_simple),
+                text='Monthly Savings <br>Break Even Point: <br>{} months'.format(
+                    breakeven_month_simple
+                ),
                 textposition="bottom right",
             )
         )
@@ -1358,7 +1361,7 @@ def init_callbacks(dash_app):
                 'y': df['monthly_savings'],
                 'type': 'scatter',
                 'name': 'Simple Savings',
-                'line':{'color':'blue'}
+                'line': {'color': 'blue'},
             },
             1,
             1,
@@ -1378,14 +1381,15 @@ def init_callbacks(dash_app):
         fig.add_trace(
             go.Scatter(
                 x=[breakeven_month_interest + 2],
-                y=[0.5*graph_y_min],
+                y=[0.5 * graph_y_min],
                 mode='text',
                 name='',
-                text='Interest Savings <br>Break Even Point: <br>{} months'.format(breakeven_month_interest),
+                text='Interest Savings <br>Break Even Point: <br>{} months'.format(
+                    breakeven_month_interest
+                ),
                 textposition="bottom right",
             )
         )
-
 
         fig.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="left", x=0),

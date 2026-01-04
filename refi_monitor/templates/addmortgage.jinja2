@@ -1,0 +1,137 @@
+{% extends "layout.jinja2" %}
+
+
+{% block content %}
+{% include 'forms.jinja2' %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='dist/img/logo.png') }}"
+        alt="logo"
+      />
+    </div>
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-warning">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert">
+          x
+        </button>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    {% if mortgage is none %}
+    <h1>Add a Mortgage</h1>
+
+    <form method="POST" action="/addmortgage">
+      
+    {% else %}
+    <h1>Edit Mortgage</h1>
+
+
+    <form method="POST" action="/editmortgage/{{mortgage.id}}">
+    {% endif %}
+      {{ form.csrf_token }}
+      <fieldset class="form-field name">
+        {{ form.name.label }}
+        {{ form.name(placeholder='Home') }}
+        {% if form.name.errors %}
+          <ul class="errors">
+            {% for error in form.name.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field zip_code">
+        {{ form.zip_code.label }}
+        {{ form.zip_code(placeholder='12345') }}
+        {% if form.zip_code.errors %}
+          <ul class="errors">
+            {% for error in form.zip_code.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field original_principal">
+        {{ form.original_principal.label }}
+        {{ form.original_principal }}
+        {% if form.original_principal.errors %}
+          <ul class="errors">
+            {% for error in form.original_principal.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field original_term">
+        {{ form.original_term.label }}
+        {{ form.original_term }}
+        {% if form.original_term.errors %}
+          <ul class="errors">
+            {% for error in form.original_term.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field original_interest_rate">
+        {{ form.original_interest_rate.label }}
+        {{ form.original_interest_rate }}
+        {% if form.original_interest_rate.errors %}
+          <ul class="errors">
+            {% for error in form.original_interest_rate.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field remaining_principal">
+        {{ form.remaining_principal.label }}
+        {{ form.remaining_principal }}
+        {% if form.remaining_principal.errors %}
+          <ul class="errors">
+            {% for error in form.remaining_principal.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+
+      <fieldset class="form-field remaining_term">
+        {{ form.remaining_term.label }}
+        {{ form.remaining_term }}
+        {% if form.remaining_term.errors %}
+          <ul class="errors">
+            {% for error in form.remaining_term.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+      <fieldset class="form-field credit_score">
+        {{ form.credit_score.label }}
+        {{ form.credit_score }}
+        {% if form.credit_score.errors %}
+          <ul class="errors">
+            {% for error in form.credit_score.errors %}
+              <li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </fieldset>
+
+
+      <div class="submit-button">
+        {{ form.submit }}
+      </div>
+
+    </form>
+
+  </div>
+
+{% endblock %}
