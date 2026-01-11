@@ -63,12 +63,24 @@ def dashboard():
         matched = 0
         for a in alerts:
             if m.id == a.mortgage_id:
-                mortgage_alerts.append(
-                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id)]
-                )
+                mortgage_alerts.append({
+                    'mortgage': m,
+                    'alert': a,
+                    'status_graph': status_target_payment_plot(m.id),
+                    'time_graph': time_target_plot(m.id),
+                    'savings_plot': savings_projection_plot(m.id),
+                    'savings_data': get_savings_projection_data(m.id),
+                })
                 matched += 1
         if matched == 0:
-            mortgage_alerts.append([m, None, None, None])
+            mortgage_alerts.append({
+                'mortgage': m,
+                'alert': None,
+                'status_graph': None,
+                'time_graph': None,
+                'savings_plot': None,
+                'savings_data': None,
+            })
 
     return render_template(
         'dashboard.jinja2',
@@ -97,12 +109,24 @@ def manage():
         matched = 0
         for a in alerts:
             if m.id == a.mortgage_id:
-                mortgage_alerts.append(
-                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id)]
-                )
+                mortgage_alerts.append({
+                    'mortgage': m,
+                    'alert': a,
+                    'status_graph': status_target_payment_plot(m.id),
+                    'time_graph': time_target_plot(m.id),
+                    'savings_plot': savings_projection_plot(m.id),
+                    'savings_data': get_savings_projection_data(m.id),
+                })
                 matched += 1
         if matched == 0:
-            mortgage_alerts.append([m, None, None, None])
+            mortgage_alerts.append({
+                'mortgage': m,
+                'alert': None,
+                'status_graph': None,
+                'time_graph': None,
+                'savings_plot': None,
+                'savings_data': None,
+            })
 
     return render_template(
         'manage.jinja2',

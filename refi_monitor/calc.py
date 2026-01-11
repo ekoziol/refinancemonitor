@@ -144,3 +144,73 @@ def calculate_recoup_data(
     #     df['interest_savings'] =
 
     return df
+
+
+def calculate_savings_projection(
+    remaining_principal,
+    current_rate,
+    remaining_term,
+    new_rate,
+    new_term,
+    refi_cost
+):
+    """
+    Calculate comprehensive savings projection for refinancing.
+
+    Returns a dict with:
+    - current_monthly: Current monthly payment
+    - new_monthly: New monthly payment after refi
+    - monthly_savings: Monthly payment reduction
+    - total_payment_savings: Total savings from reduced payments
+    - current_total_interest: Total interest on current loan
+    - new_total_interest: Total interest on new loan
+    - interest_savings: Savings from reduced interest
+    - net_savings: Total savings minus refi costs
+    - break_even_months: Months to recoup refi costs
+    """
+    # Current monthly payment
+    current_monthly = calc_loan_monthly_payment(
+        remaining_principal, current_rate, remaining_term
+    )
+
+    # New monthly payment
+    new_monthly = calc_loan_monthly_payment(
+        remaining_principal, new_rate, new_term
+    )
+
+    # Monthly savings
+    monthly_savings = current_monthly - new_monthly
+
+    # Total payment savings over new loan term
+    # Compare: what you'd pay staying vs what you'd pay with new loan
+    current_total_payments = current_monthly * remaining_term
+    new_total_payments = new_monthly * new_term
+    total_payment_savings = current_total_payments - new_total_payments
+
+    # Interest calculations
+    current_total_interest = current_total_payments - remaining_principal
+    new_total_interest = new_total_payments - remaining_principal
+    interest_savings = current_total_interest - new_total_interest
+
+    # Net savings after refi costs
+    net_savings = total_payment_savings - refi_cost
+
+    # Break-even months (if monthly savings > 0)
+    if monthly_savings > 0:
+        break_even_months = int(np.ceil(refi_cost / monthly_savings))
+    else:
+        break_even_months = None
+
+    return {
+        'current_monthly': current_monthly,
+        'new_monthly': new_monthly,
+        'monthly_savings': monthly_savings,
+        'total_payment_savings': total_payment_savings,
+        'current_total_interest': current_total_interest,
+        'new_total_interest': new_total_interest,
+        'interest_savings': interest_savings,
+        'net_savings': net_savings,
+        'break_even_months': break_even_months,
+        'refi_cost': refi_cost,
+        'new_term': new_term,
+    }

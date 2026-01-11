@@ -6,10 +6,10 @@
 <table class="ml-72 mt-16">
 
 {% for ma in mortgage_alerts %}
-    {% set m = ma[0] %}
-    {% set a = ma[1] %}
-    {% set status_graph = ma[2] %}
-    {% set time_graph = ma[3] %}
+    {% set m = ma.mortgage %}
+    {% set a = ma.alert %}
+    {% set status_graph = ma.status_graph %}
+    {% set time_graph = ma.time_graph %}
 
     <tr>
         <td>

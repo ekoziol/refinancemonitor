@@ -20,24 +20,17 @@
 </tr>
 {% else %}
     {% for ma in mortgage_alerts %}
-    {% set m = ma[0] %}
-    {% set a = ma[1] %}
-    {% set status_graph = ma[2] %}
-    {% set time_graph = ma[3] %}
+    {% set m = ma.mortgage %}
+    {% set a = ma.alert %}
+    {% set status_graph = ma.status_graph %}
+    {% set time_graph = ma.time_graph %}
+    {% set savings_plot = ma.savings_plot %}
+    {% set savings_data = ma.savings_data %}
     <tr>
         <tr>
             <td>
                 <table>
-    <!--                 <tr>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Mortgage Name</h3>
-                                </div>
-                        </div>
-                    </tr> -->
                     <tr>
-     <!--                    <td><b>Remaining Principal: </b></td><td>${{ m.remaining_principal }}</td> -->
                         <td>
                             <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
                                     <div class="md:p-7 p-4">
@@ -54,7 +47,7 @@
                             </div>
                         </div>
                         </td>
-                        
+
                         <td>
                             <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
                                 <div class="md:p-7 p-4">
@@ -127,6 +120,107 @@
                 </table>
             </td>
         </tr>
+
+        <!-- Savings Projection Card -->
+        {% if savings_data %}
+        <tr>
+            <td colspan="2">
+                <div class="mt-4 mb-2 bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg rounded-lg p-6">
+                    <h2 class="text-2xl text-gray-200 font-bold mb-4">Savings Projection</h2>
+
+                    <!-- Key Metrics Row -->
+                    <div class="flex flex-wrap gap-4 mb-4">
+                        <!-- Monthly Savings Card -->
+                        <div class="flex-1 min-w-[150px] bg-gray-800 rounded-lg p-4 text-center">
+                            <h3 class="text-sm text-gray-400">Monthly Savings</h3>
+                            <h2 class="text-2xl font-bold {% if savings_data.monthly_savings > 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                {{ "${:,.0f}".format(savings_data.monthly_savings) }}
+                            </h2>
+                            <p class="text-xs text-gray-500">per month</p>
+                        </div>
+
+                        <!-- Net Lifetime Savings Card -->
+                        <div class="flex-1 min-w-[150px] bg-gray-800 rounded-lg p-4 text-center">
+                            <h3 class="text-sm text-gray-400">Net Lifetime Savings</h3>
+                            <h2 class="text-2xl font-bold {% if savings_data.net_savings > 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                {{ "${:,.0f}".format(savings_data.net_savings) }}
+                            </h2>
+                            <p class="text-xs text-gray-500">after refi costs</p>
+                        </div>
+
+                        <!-- Break-Even Card -->
+                        <div class="flex-1 min-w-[150px] bg-gray-800 rounded-lg p-4 text-center">
+                            <h3 class="text-sm text-gray-400">Break-Even</h3>
+                            <h2 class="text-2xl font-bold text-blue-400">
+                                {% if savings_data.break_even_months %}
+                                    {{ savings_data.break_even_months }} mo
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h2>
+                            <p class="text-xs text-gray-500">to recoup costs</p>
+                        </div>
+
+                        <!-- Interest Savings Card -->
+                        <div class="flex-1 min-w-[150px] bg-gray-800 rounded-lg p-4 text-center">
+                            <h3 class="text-sm text-gray-400">Interest Savings</h3>
+                            <h2 class="text-2xl font-bold {% if savings_data.interest_savings > 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                {{ "${:,.0f}".format(savings_data.interest_savings) }}
+                            </h2>
+                            <p class="text-xs text-gray-500">total interest saved</p>
+                        </div>
+                    </div>
+
+                    <!-- Rate Comparison -->
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-1 bg-gray-800 rounded-lg p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Current Rate:</span>
+                                <span class="text-xl text-red-400 font-bold">{{ "%.2f"|format(savings_data.current_rate) }}%</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-gray-800 rounded-lg p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">New Rate:</span>
+                                <span class="text-xl text-green-400 font-bold">{{ "%.2f"|format(savings_data.new_rate) }}%</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-gray-800 rounded-lg p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Rate Drop:</span>
+                                <span class="text-xl text-blue-400 font-bold">{{ "%.2f"|format(savings_data.current_rate - savings_data.new_rate) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation Badge -->
+                    <div class="text-center">
+                        {% if savings_data.is_favorable %}
+                            <span class="inline-block bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                                Refinancing is Favorable
+                            </span>
+                        {% else %}
+                            <span class="inline-block bg-yellow-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                                Wait for Better Rates
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Visual Breakdown Chart -->
+        {% if savings_plot %}
+        <tr>
+            <td colspan="2">
+                <div class="bg-white rounded-lg shadow-lg p-4 mb-4">
+                    {{ savings_plot|safe }}
+                </div>
+            </td>
+        </tr>
+        {% endif %}
+        {% endif %}
+
         <tr>
             <td>
             {% if status_graph %}
