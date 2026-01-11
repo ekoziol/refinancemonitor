@@ -6,12 +6,14 @@ from flask_migrate import Migrate
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
+from flask_cors import CORS
 
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 mail = Mail()
+cors = CORS()
 
 
 def init_app():
@@ -26,6 +28,7 @@ def init_app():
     login_manager.init_app(app)
     csrf.init_app(app)
     mail.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
 
     with app.app_context():
         # Import parts of our core Flask app
@@ -45,6 +48,11 @@ def init_app():
         app.register_blueprint(routes.main_bp)
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
+
+        # Register API Blueprint (CSRF exempt for JSON API)
+        from .api import api_bp
+        csrf.exempt(api_bp)
+        app.register_blueprint(api_bp)
 
         # Register CLI commands
         from . import cli
