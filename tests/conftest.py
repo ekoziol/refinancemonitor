@@ -1,8 +1,14 @@
 """Pytest configuration for refi_alert tests."""
 import os
+import sys
 import pytest
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 from datetime import datetime
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 # Set test environment variables before importing the app
 os.environ['FLASK_ENV'] = 'testing'
@@ -14,6 +20,19 @@ os.environ['STRIPE_PRICE_ID'] = 'price_test_id'
 os.environ['STRIPE_SUCCESS_URL'] = 'http://localhost:5000/success'
 os.environ['STRIPE_CANCEL_URL'] = 'http://localhost:5000/cancel'
 os.environ['ENABLE_SCHEDULER'] = 'false'
+
+
+def pytest_configure(config):
+    """Configure custom markers"""
+    config.addinivalue_line(
+        "markers", "contract: API contract tests (TDD - may fail before implementation)"
+    )
+    config.addinivalue_line(
+        "markers", "integration: Integration tests requiring database/external services"
+    )
+    config.addinivalue_line(
+        "markers", "slow: Tests that take longer than 1 second"
+    )
 
 
 class TestConfig:
@@ -187,3 +206,25 @@ def mock_api_response():
             '5_1_arm': 5.80,
         }
     ]
+
+
+@pytest.fixture
+def sample_mortgage_data():
+    """Standard mortgage data for testing calculations"""
+    return {
+        "original_principal": 400000.00,
+        "original_rate": 0.045,
+        "original_term": 360,
+        "remaining_principal": 364631.66,
+        "remaining_term": 300,
+    }
+
+
+@pytest.fixture
+def sample_refinance_data():
+    """Standard refinance scenario for testing"""
+    return {
+        "target_rate": 0.035,
+        "target_term": 360,
+        "refi_cost": 5000.00,
+    }
