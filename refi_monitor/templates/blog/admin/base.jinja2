@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Blog Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/main.css') }}" type="text/css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='dist/img/favicon.png') }}" type="image/x-icon">
+</head>
+<body class="bg-gray-100">
+    <!-- Admin Header -->
+    <header class="bg-gray-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-8">
+                    <a href="{{ url_for('blog_bp.admin_blog_list') }}" class="text-xl font-bold">Blog Admin</a>
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="{{ url_for('blog_bp.admin_blog_list') }}" class="text-gray-300 hover:text-white">Posts</a>
+                        <a href="{{ url_for('blog_bp.admin_category_list') }}" class="text-gray-300 hover:text-white">Categories</a>
+                        <a href="{{ url_for('blog_bp.admin_tag_list') }}" class="text-gray-300 hover:text-white">Tags</a>
+                    </nav>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('blog_bp.blog_index') }}" class="text-sm text-gray-300 hover:text-white">View Blog</a>
+                    <a href="{{ url_for('main_bp.dashboard') }}" class="text-sm text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="{{ url_for('main_bp.logout') }}" class="text-sm text-gray-300 hover:text-white">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        {% for category, message in messages %}
+        <div class="p-4 rounded-md {% if category == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

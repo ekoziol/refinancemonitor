@@ -1,0 +1,108 @@
+{% extends "blog/base.jinja2" %}
+
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2">
+        <h1 class="text-3xl font-bold mb-8">Refinancing Tips & Market Updates</h1>
+
+        {% if posts.items %}
+        <div class="space-y-8">
+            {% for post in posts.items %}
+            <article class="bg-white rounded-lg shadow-sm overflow-hidden">
+                {% if post.featured_image %}
+                <a href="{{ url_for('blog_bp.blog_post', slug=post.slug) }}">
+                    <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="w-full h-48 object-cover">
+                </a>
+                {% endif %}
+                <div class="p-6">
+                    {% if post.category %}
+                    <a href="{{ url_for('blog_bp.blog_category', slug=post.category.slug) }}" class="text-sm text-blue-600 font-medium uppercase tracking-wide">{{ post.category.name }}</a>
+                    {% endif %}
+                    <h2 class="text-xl font-semibold mt-2">
+                        <a href="{{ url_for('blog_bp.blog_post', slug=post.slug) }}" class="hover:text-blue-600">{{ post.title }}</a>
+                    </h2>
+                    <p class="text-gray-600 mt-2">
+                        {{ post.excerpt or post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}
+                    </p>
+                    <div class="flex items-center justify-between mt-4 text-sm text-gray-500">
+                        <span>{{ post.published_at.strftime('%B %d, %Y') if post.published_at else '' }}</span>
+                        <span>{{ post.reading_time or 1 }} min read</span>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if posts.pages > 1 %}
+        <nav class="flex justify-center mt-8 space-x-2">
+            {% if posts.has_prev %}
+            <a href="{{ url_for('blog_bp.blog_index', page=posts.prev_num) }}" class="px-4 py-2 bg-white border rounded hover:bg-gray-50">Previous</a>
+            {% endif %}
+
+            {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == posts.page %}
+                    <span class="px-4 py-2 bg-blue-600 text-white rounded">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('blog_bp.blog_index', page=page_num) }}" class="px-4 py-2 bg-white border rounded hover:bg-gray-50">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                <span class="px-4 py-2">...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if posts.has_next %}
+            <a href="{{ url_for('blog_bp.blog_index', page=posts.next_num) }}" class="px-4 py-2 bg-white border rounded hover:bg-gray-50">Next</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+            <p class="text-gray-600">No blog posts yet. Check back soon!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="lg:col-span-1">
+        <!-- CTA Box -->
+        <div class="bg-blue-600 text-white rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-2">Never Miss a Rate Drop</h3>
+            <p class="text-blue-100 mb-4">Get personalized alerts when mortgage rates hit your target.</p>
+            <a href="{{ url_for('auth_bp.signup') }}" class="inline-block bg-white text-blue-600 px-4 py-2 rounded font-medium hover:bg-blue-50">Start Free</a>
+        </div>
+
+        <!-- Categories -->
+        {% if categories %}
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Categories</h3>
+            <ul class="space-y-2">
+                {% for cat in categories %}
+                <li>
+                    <a href="{{ url_for('blog_bp.blog_category', slug=cat.slug) }}" class="text-gray-600 hover:text-blue-600">{{ cat.name }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Recent Posts -->
+        {% if recent_posts %}
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold mb-4">Recent Posts</h3>
+            <ul class="space-y-4">
+                {% for rp in recent_posts %}
+                <li>
+                    <a href="{{ url_for('blog_bp.blog_post', slug=rp.slug) }}" class="text-gray-700 hover:text-blue-600 text-sm">{{ rp.title }}</a>
+                    <p class="text-xs text-gray-500 mt-1">{{ rp.published_at.strftime('%b %d, %Y') if rp.published_at else '' }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}
