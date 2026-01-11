@@ -221,11 +221,11 @@ def editalert(alert_id):
     form.estimate_refinance_cost.data = existing_alert.estimate_refinance_cost
 
     if form.validate_on_submit():
-        existing_alert.alert_type = (form.alert_type.data,)
-        existing_alert.target_monthly_payment = (form.target_monthly_payment.data,)
-        existing_alert.target_term = (form.target_term.data,)
-        existing_alert.target_interest_rate = (form.target_interest_rate.data,)
-        existing_alert.estimate_refinance_cost = (form.estimate_refinance_cost.data,)
+        existing_alert.alert_type = form.alert_type.data
+        existing_alert.target_monthly_payment = form.target_monthly_payment.data
+        existing_alert.target_term = form.target_term.data
+        existing_alert.target_interest_rate = form.target_interest_rate.data
+        existing_alert.estimate_refinance_cost = form.estimate_refinance_cost.data
 
         db.session.commit()
         db.session.flush()
