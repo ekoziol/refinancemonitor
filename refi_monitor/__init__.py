@@ -59,8 +59,4 @@ def init_app():
         compile_static_assets(assets)
         db.create_all()
 
-        # Initialize background scheduler for alert checking
-        from .scheduler import init_scheduler
-        init_scheduler(app)
-
         return app

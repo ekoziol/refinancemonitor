@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Development
+.env
+.env.local
+.env.*.local
+*.pyc
+__pycache__
+.pytest_cache
+.coverage
+htmlcov
+
+# Node
+node_modules
+
+# Documentation
+*.md
+docs/
+images/
+notebooks/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test files
+tests/
+*_test.py
+test_*.py
+
+# Beads (issue tracking)
+.beads/
+
+# Data files (development only)
+data/
+
+# Modeling notebooks
+modeling/
