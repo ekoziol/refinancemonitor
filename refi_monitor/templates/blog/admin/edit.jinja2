@@ -1,0 +1,125 @@
+{% extends "blog/admin/base.jinja2" %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{{ url_for('blog_bp.admin_blog_list') }}" class="text-gray-600 hover:text-gray-900">&larr; Back to Posts</a>
+</div>
+
+<h1 class="text-2xl font-bold mb-6">{{ 'Edit Post' if post else 'Create Post' }}</h1>
+
+<form method="POST" action="{{ url_for('blog_bp.admin_blog_edit', post_id=post.id) if post else url_for('blog_bp.admin_blog_create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Title -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input type="text" name="title" id="title" value="{{ post.title if post else '' }}" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Content -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                <p class="text-xs text-gray-500 mb-2">Supports HTML. Use paragraph tags for formatting.</p>
+                <textarea name="content" id="content" rows="20" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ post.content if post else '' }}</textarea>
+            </div>
+
+            <!-- Excerpt -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label for="excerpt" class="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
+                <p class="text-xs text-gray-500 mb-2">Brief summary shown on listing pages. Leave blank to auto-generate.</p>
+                <textarea name="excerpt" id="excerpt" rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ post.excerpt if post else '' }}</textarea>
+            </div>
+
+            <!-- SEO -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium mb-4">SEO Settings</h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+                        <p class="text-xs text-gray-500 mb-2">Leave blank to use post title. Max 70 characters.</p>
+                        <input type="text" name="meta_title" id="meta_title" value="{{ post.meta_title if post else '' }}" maxlength="70"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                        <p class="text-xs text-gray-500 mb-2">Leave blank to use excerpt. Max 160 characters.</p>
+                        <textarea name="meta_description" id="meta_description" rows="2" maxlength="160"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ post.meta_description if post else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Publish -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium mb-4">Publish</h3>
+
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_published" {% if post and post.is_published %}checked{% endif %}
+                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Published</span>
+                    </label>
+                </div>
+
+                {% if post and post.published_at %}
+                <p class="text-xs text-gray-500 mb-4">Published: {{ post.published_at.strftime('%b %d, %Y at %H:%M') }}</p>
+                {% endif %}
+
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    {{ 'Update Post' if post else 'Create Post' }}
+                </button>
+            </div>
+
+            <!-- Featured Image -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label for="featured_image" class="block text-sm font-medium text-gray-700 mb-2">Featured Image URL</label>
+                <input type="url" name="featured_image" id="featured_image" value="{{ post.featured_image if post else '' }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {% if post and post.featured_image %}
+                <img src="{{ post.featured_image }}" alt="Preview" class="mt-4 rounded">
+                {% endif %}
+            </div>
+
+            <!-- Category -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select name="category_id" id="category_id"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Category --</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if post and post.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Tags -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    {% for tag in tags %}
+                    <label class="flex items-center">
+                        <input type="checkbox" name="tags" value="{{ tag.id }}"
+                            {% if post and tag in post.tags %}checked{% endif %}
+                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">{{ tag.name }}</span>
+                    </label>
+                    {% else %}
+                    <p class="text-sm text-gray-500">No tags available. <a href="{{ url_for('blog_bp.admin_tag_list') }}" class="text-blue-600">Create tags</a></p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
