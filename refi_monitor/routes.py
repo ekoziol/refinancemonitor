@@ -1,12 +1,13 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template
+from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
 from .models import Mortgage, Alert
 from .plots import *
+from .scheduler import trigger_manual_check
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -121,3 +122,19 @@ def logout():
     """User log-out logic."""
     logout_user()
     return redirect(url_for('auth_bp.login'))
+
+
+@main_bp.route("/admin/trigger-alerts", methods=['POST'])
+@login_required
+def admin_trigger_alerts():
+    """
+    Admin endpoint to manually trigger alert checks.
+    Useful for testing and on-demand alert evaluation.
+    """
+    # TODO: Add proper admin role checking
+    # For now, any logged-in user can trigger (should be restricted in production)
+    try:
+        result = trigger_manual_check()
+        return jsonify({'status': 'success', 'message': result}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500

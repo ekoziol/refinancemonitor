@@ -36,6 +36,15 @@ class Config:
     RATE_UPDATE_MINUTE = int(environ.get("RATE_UPDATE_MINUTE", "0"))  # 00 minutes default
     ENABLE_SCHEDULER = environ.get("ENABLE_SCHEDULER", "true").lower() == "true"
 
+    # Email Configuration
+    MAIL_SERVER = environ.get("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(environ.get("MAIL_PORT", 587))
+    MAIL_USE_TLS = environ.get("MAIL_USE_TLS", "True") == "True"
+    MAIL_USE_SSL = environ.get("MAIL_USE_SSL", "False") == "True"
+    MAIL_USERNAME = environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = environ.get("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = environ.get("MAIL_DEFAULT_SENDER", "noreply@refialert.com")
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'

@@ -12,8 +12,9 @@ from flask import (
 from flask_login import current_user, login_user, login_required
 from . import login_manager
 from .forms import AddMortgageForm, AddAlertForm
-from .models import Mortgage, db, Alert
+from .models import Mortgage, db, Alert, User
 from . import csrf
+from .notifications import send_payment_confirmation
 
 import stripe
 import os
@@ -347,23 +348,44 @@ def alert_payment_webhook():
             mortgage_id=m_id, id=alert_id, user_id=user_id
         ).first()
 
-        paid_alert.payment_status = 'Paid'
-        paid_alert.initial_payment = True
-        paid_alert.initial_period_start = datalines['period']['start']
-        paid_alert.initial_period_end = datalines['period']['end']
-        paid_alert.period_start = datalines['period']['start']
-        paid_alert.period_end = datalines['period']['end']
-        paid_alert.price_id = datalines['price']['id']
-        paid_alert.stripe_customer_id = data_object['customer']
-        paid_alert.stripe_invoice_id = datalines['subscription']
+        if paid_alert:
+            paid_alert.payment_status = 'active'
+            paid_alert.initial_payment = True
+            paid_alert.initial_period_start = datalines['period']['start']
+            paid_alert.initial_period_end = datalines['period']['end']
+            paid_alert.period_start = datalines['period']['start']
+            paid_alert.period_end = datalines['period']['end']
+            paid_alert.price_id = datalines['price']['id']
+            paid_alert.stripe_customer_id = data_object['customer']
+            paid_alert.stripe_invoice_id = datalines['subscription']
 
-        print("paid_alert_invoice_id: ", paid_alert.stripe_invoice_id)
-        db.session.commit()
-        print(data)
+            print("paid_alert_invoice_id: ", paid_alert.stripe_invoice_id)
+            db.session.commit()
+
+            # Send payment confirmation email
+            user = User.query.get(user_id)
+            if user:
+                send_payment_confirmation(user.email, alert_id, 'active')
+
+            print(data)
     elif event_type == 'invoice.payment_failed':
         # The payment failed or the customer does not have a valid payment method.
         # The subscription becomes past_due. Notify your customer and send them to the
         # customer portal to update their payment information.
+        datalines = data_object['lines']['data'][0]
+        alert_id = datalines['metadata'].get('alert_id')
+        user_id = datalines['metadata'].get('user_id')
+        m_id = datalines['metadata'].get('m_id')
+
+        if alert_id and user_id and m_id:
+            failed_alert = Alert.query.filter_by(
+                mortgage_id=m_id, id=alert_id, user_id=user_id
+            ).first()
+
+            if failed_alert:
+                failed_alert.payment_status = 'payment_failed'
+                db.session.commit()
+
         print(data)
     else:
         print('Unhandled event type {}'.format(event_type))
