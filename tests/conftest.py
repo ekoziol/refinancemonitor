@@ -2,6 +2,7 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
+from datetime import datetime
 
 # Set test environment variables before importing the app
 os.environ['FLASK_ENV'] = 'testing'
@@ -15,6 +16,19 @@ os.environ['STRIPE_CANCEL_URL'] = 'http://localhost:5000/cancel'
 os.environ['ENABLE_SCHEDULER'] = 'false'
 
 
+class TestConfig:
+    """Test configuration."""
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = 'test-secret-key'
+    WTF_CSRF_ENABLED = False
+    ENABLE_SCHEDULER = False
+    MAIL_SUPPRESS_SEND = True
+    MAIL_DEFAULT_SENDER = 'test@refialert.com'
+    SERVER_NAME = 'localhost'
+
+
 @pytest.fixture(scope='function')
 def app():
     """Create application for testing."""
@@ -26,6 +40,8 @@ def app():
         application.config['TESTING'] = True
         application.config['WTF_CSRF_ENABLED'] = False
         application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        application.config['MAIL_SUPPRESS_SEND'] = True
+        application.config['MAIL_DEFAULT_SENDER'] = 'test@refialert.com'
 
         with application.app_context():
             db.create_all()
@@ -67,7 +83,8 @@ def sample_user(app, db_session):
     from refi_monitor.models import User
     user = User(
         name='Test User',
-        email='test@example.com'
+        email='test@example.com',
+        created_on=datetime.utcnow()
     )
     user.set_password('testpassword')
     db_session.add(user)
@@ -88,7 +105,8 @@ def sample_mortgage(app, db_session, sample_user):
         original_interest_rate=0.045,
         remaining_principal=280000.0,
         remaining_term=300,
-        credit_score=750
+        credit_score=750,
+        created_on=datetime.utcnow()
     )
     db_session.add(mortgage)
     db_session.commit()
@@ -108,8 +126,42 @@ def sample_alert(app, db_session, sample_user, sample_mortgage):
         target_term=360,
         estimate_refinance_cost=3000.0,
         initial_payment=False,
-        payment_status='incomplete'
+        payment_status='incomplete',
+        created_on=datetime.utcnow()
     )
     db_session.add(alert)
     db_session.commit()
     return alert
+
+
+@pytest.fixture
+def sample_trigger(app, db_session, sample_alert):
+    """Create a sample trigger for testing."""
+    from refi_monitor.models import Trigger
+    trigger = Trigger(
+        alert_id=sample_alert.id,
+        alert_type='interest_rate',
+        alert_trigger_status=1,
+        alert_trigger_reason='Market rate dropped to 5.25%, below your target of 5.5%',
+        alert_trigger_date=datetime.utcnow(),
+        created_on=datetime.utcnow()
+    )
+    db_session.add(trigger)
+    db_session.commit()
+    return trigger
+
+
+@pytest.fixture
+def unsubscribed_user(app, db_session):
+    """Create an unsubscribed user for testing."""
+    from refi_monitor.models import User
+    user = User(
+        name='Unsubscribed User',
+        email='unsubscribed@example.com',
+        email_unsubscribed=True,
+        created_on=datetime.utcnow()
+    )
+    user.set_password('testpassword')
+    db_session.add(user)
+    db_session.commit()
+    return user
