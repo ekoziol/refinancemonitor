@@ -59,16 +59,20 @@ def evaluate_alert(alert):
 
     # Get current market rates from RateUpdater
     updater = RateUpdater()
-    current_rates = updater.rate_fetcher.fetch_rates()
+    current_rates = updater.fetcher.fetch_current_rates()
 
     # Determine term in years for rate lookup
-    target_term_years = alert.target_term // 12
-    if target_term_years not in current_rates:
+    target_term_years = alert.target_term // 12 if alert.target_term else 30
+
+    # Current rates use integer year keys (30, 15, etc.)
+    if target_term_years in current_rates:
+        current_market_rate = current_rates[target_term_years]
+    elif current_rates:
         # Find closest term
         closest_term = min(current_rates.keys(), key=lambda x: abs(x - target_term_years))
         current_market_rate = current_rates[closest_term]
     else:
-        current_market_rate = current_rates[target_term_years]
+        return False, "No current rates available", None
 
     triggered = False
     reason = ""
