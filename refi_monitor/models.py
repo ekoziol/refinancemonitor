@@ -128,3 +128,28 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class DailyMortgageRate(db.Model):
+    """Daily national mortgage rate data from MortgageNewsDaily."""
+
+    __tablename__ = 'daily_mortgage_rate'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False, unique=False, index=True)
+    rate_type = db.Column(db.String(20), nullable=False, unique=False, index=True)
+    rate = db.Column(db.Float, nullable=False, unique=False)
+    points = db.Column(db.Float, nullable=True, unique=False)
+    apr = db.Column(db.Float, nullable=True, unique=False)
+    change_from_previous = db.Column(db.Float, nullable=True, unique=False)
+    source = db.Column(db.String(50), nullable=False, unique=False, default='mortgagenewsdaily')
+    created_at = db.Column(db.DateTime, nullable=False, unique=False)
+    updated_at = db.Column(db.DateTime, nullable=False, unique=False)
+
+    __table_args__ = (
+        db.Index('ix_daily_rate_date_type', 'date', 'rate_type', unique=True),
+    )
+
+    def __repr__(self):
+        return '<DailyMortgageRate {}: {} at {}% on {}>'.format(
+            self.rate_type, self.source, self.rate, self.date
+        )
