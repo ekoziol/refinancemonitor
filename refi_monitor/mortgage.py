@@ -263,13 +263,19 @@ def cancel():
 @login_required
 def create_checkout_session():
     try:
+        price_id = os.getenv('STRIPE_PRICE_ID')
+        success_url = os.getenv('STRIPE_SUCCESS_URL', 'http://localhost:5000/success')
+        cancel_url = os.getenv('STRIPE_CANCEL_URL', 'http://localhost:5000/cancel')
+
+        if not price_id:
+            return jsonify({'error': 'Stripe price ID not configured'}), 500
 
         checkout_session = stripe.checkout.Session.create(
-            line_items=[{'price': 'price_1JTUalFikv2vmX3N8ktXSifY', 'quantity': 1}],
+            line_items=[{'price': price_id, 'quantity': 1}],
             payment_method_types=['card'],
             mode='subscription',
-            success_url='http://localhost:5000/success',
-            cancel_url='http://localhost:5000/cancel',
+            success_url=success_url,
+            cancel_url=cancel_url,
             subscription_data={
                 'metadata': {
                     'alert_id': session['alert_id'],
@@ -279,9 +285,10 @@ def create_checkout_session():
             },
         )
 
+    except stripe.error.StripeError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-
-        return str(e)
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
     return redirect(checkout_session.url, code=303)
 
@@ -291,102 +298,138 @@ def create_checkout_session():
 def alert_payment_webhook():
     webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
-    request_data = json.loads(request.data)
-
     if webhook_secret:
-        # Retrieve the event by verifying the signature using the raw body and secret if webhook signing is configured.
+        # Retrieve the event by verifying the signature using the raw body and secret
         signature = request.headers.get('stripe-signature')
+        if not signature:
+            return jsonify({'error': 'Missing stripe-signature header'}), 400
         try:
             event = stripe.Webhook.construct_event(
                 payload=request.data, sig_header=signature, secret=webhook_secret
             )
             data = event['data']
-        except Exception as e:
-            return e
-        # Get the type of webhook event sent - used to check the status of PaymentIntents.
+        except stripe.error.SignatureVerificationError as e:
+            return jsonify({'error': 'Invalid signature'}), 400
+        except ValueError as e:
+            return jsonify({'error': 'Invalid payload'}), 400
         event_type = event['type']
     else:
-        data = request_data['data']
-        event_type = request_data['type']
+        # Development mode without signature verification (not recommended for production)
+        try:
+            request_data = json.loads(request.data)
+            data = request_data['data']
+            event_type = request_data['type']
+        except (json.JSONDecodeError, KeyError) as e:
+            return jsonify({'error': 'Invalid webhook payload'}), 400
+
     data_object = data['object']
 
     if event_type == 'checkout.session.completed':
-        # Payment is successful and the subscription is created.
-        # You should provision the subscription and save the customer ID to your database.
-        # paid_alert = Alert.query.filter_by(
-        #     mortgage_id=m_id, alert_id=alert_id, user_id=user_id
-        # ).first()
+        # Checkout session completed - subscription is being created
+        # The actual provisioning is handled by invoice.paid event
+        # Here we just mark the alert as pending until payment is confirmed
+        subscription_id = data_object.get('subscription')
+        customer_id = data_object.get('customer')
 
-        # paid_alert.payment_status = 'Paid'
-        # paid_alert.initial_payment = True
-        # paid_alert.initial_period_start = data_object['lines']['data']['period'][
-        #     'start'
-        # ]
-        # paid_alert.initial_period_end = data_object['lines']['data']['period']['end']
-        # paid_alert.period_start = data_object['lines']['data']['period']['start']
-        # paid_alert.period_end = data_object['lines']['data']['period']['end']
-        # paid_alert.price_id = data_object['lines']['data']['period']['price']
-        # paid_alert.stripe_customer_id = data_object['customer']
-        # paid_alert.stripe_invoice_id = data_object['data']['subscription']
+        if subscription_id:
+            try:
+                # Retrieve subscription to get metadata
+                subscription = stripe.Subscription.retrieve(subscription_id)
+                metadata = subscription.get('metadata', {})
+                alert_id = metadata.get('alert_id')
+                user_id = metadata.get('user_id')
+                m_id = metadata.get('m_id')
 
-        # print("paid_alert_invoice_id: ", paid_alert.stripe_invoice_id)
-        # db.session.commit()
-        print(data)
+                if alert_id and user_id and m_id:
+                    pending_alert = Alert.query.filter_by(
+                        mortgage_id=m_id, id=alert_id, user_id=user_id
+                    ).first()
+
+                    if pending_alert and pending_alert.payment_status == 'incomplete':
+                        pending_alert.payment_status = 'pending'
+                        pending_alert.stripe_customer_id = customer_id
+                        db.session.commit()
+            except stripe.error.StripeError:
+                pass  # invoice.paid will handle the provisioning
+
     elif event_type == 'invoice.paid':
-        # Continue to provision the subscription as payments continue to be made.
-        # Store the status in your database and check when a user accesses your service.
-        # This approach helps you avoid hitting rate limits.
-        print("data_object: ", data_object)
-        datalines = data_object['lines']['data'][0]
+        # Provision the subscription as payments are made
+        try:
+            datalines = data_object['lines']['data'][0]
 
-        alert_id = datalines['metadata']['alert_id']
-        user_id = datalines['metadata']['user_id']
-        m_id = datalines['metadata']['m_id']
+            alert_id = datalines['metadata'].get('alert_id')
+            user_id = datalines['metadata'].get('user_id')
+            m_id = datalines['metadata'].get('m_id')
 
-        paid_alert = Alert.query.filter_by(
-            mortgage_id=m_id, id=alert_id, user_id=user_id
-        ).first()
+            if not all([alert_id, user_id, m_id]):
+                return jsonify({'status': 'success', 'note': 'No alert metadata'})
 
-        if paid_alert:
-            paid_alert.payment_status = 'active'
-            paid_alert.initial_payment = True
-            paid_alert.initial_period_start = datalines['period']['start']
-            paid_alert.initial_period_end = datalines['period']['end']
-            paid_alert.period_start = datalines['period']['start']
-            paid_alert.period_end = datalines['period']['end']
-            paid_alert.price_id = datalines['price']['id']
-            paid_alert.stripe_customer_id = data_object['customer']
-            paid_alert.stripe_invoice_id = datalines['subscription']
-
-            print("paid_alert_invoice_id: ", paid_alert.stripe_invoice_id)
-            db.session.commit()
-
-            # Send payment confirmation email
-            user = User.query.get(user_id)
-            if user:
-                send_payment_confirmation(user.email, alert_id, 'active')
-
-            print(data)
-    elif event_type == 'invoice.payment_failed':
-        # The payment failed or the customer does not have a valid payment method.
-        # The subscription becomes past_due. Notify your customer and send them to the
-        # customer portal to update their payment information.
-        datalines = data_object['lines']['data'][0]
-        alert_id = datalines['metadata'].get('alert_id')
-        user_id = datalines['metadata'].get('user_id')
-        m_id = datalines['metadata'].get('m_id')
-
-        if alert_id and user_id and m_id:
-            failed_alert = Alert.query.filter_by(
+            paid_alert = Alert.query.filter_by(
                 mortgage_id=m_id, id=alert_id, user_id=user_id
             ).first()
 
-            if failed_alert:
-                failed_alert.payment_status = 'payment_failed'
+            if paid_alert:
+                paid_alert.payment_status = 'active'
+                paid_alert.initial_payment = True
+                paid_alert.initial_period_start = datalines['period']['start']
+                paid_alert.initial_period_end = datalines['period']['end']
+                paid_alert.period_start = datalines['period']['start']
+                paid_alert.period_end = datalines['period']['end']
+                paid_alert.price_id = datalines['price']['id']
+                paid_alert.stripe_customer_id = data_object['customer']
+                paid_alert.stripe_invoice_id = datalines['subscription']
+
                 db.session.commit()
 
-        print(data)
-    else:
-        print('Unhandled event type {}'.format(event_type))
+                # Send payment confirmation email
+                user = User.query.get(user_id)
+                if user:
+                    send_payment_confirmation(user.email, alert_id, 'active')
+        except (KeyError, IndexError):
+            return jsonify({'error': 'Invalid invoice data structure'}), 400
+
+    elif event_type == 'invoice.payment_failed':
+        # Payment failed - notify customer to update payment method
+        try:
+            datalines = data_object['lines']['data'][0]
+            alert_id = datalines['metadata'].get('alert_id')
+            user_id = datalines['metadata'].get('user_id')
+            m_id = datalines['metadata'].get('m_id')
+
+            if alert_id and user_id and m_id:
+                failed_alert = Alert.query.filter_by(
+                    mortgage_id=m_id, id=alert_id, user_id=user_id
+                ).first()
+
+                if failed_alert:
+                    failed_alert.payment_status = 'payment_failed'
+                    db.session.commit()
+
+                    # Notify user of failed payment
+                    user = User.query.get(user_id)
+                    if user:
+                        send_payment_confirmation(user.email, alert_id, 'payment_failed')
+        except (KeyError, IndexError):
+            pass  # Ignore malformed data
+
+    elif event_type == 'customer.subscription.deleted':
+        # Subscription cancelled - mark alert as inactive
+        try:
+            metadata = data_object.get('metadata', {})
+            alert_id = metadata.get('alert_id')
+            user_id = metadata.get('user_id')
+            m_id = metadata.get('m_id')
+
+            if alert_id and user_id and m_id:
+                cancelled_alert = Alert.query.filter_by(
+                    mortgage_id=m_id, id=alert_id, user_id=user_id
+                ).first()
+
+                if cancelled_alert:
+                    cancelled_alert.payment_status = 'cancelled'
+                    cancelled_alert.initial_payment = False
+                    db.session.commit()
+        except (KeyError, IndexError):
+            pass
 
     return jsonify({'status': 'success'})
