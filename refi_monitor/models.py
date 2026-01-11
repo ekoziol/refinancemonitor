@@ -103,9 +103,6 @@ class Trigger(db.Model):
     alert_trigger_date = db.Column(
         db.DateTime, index=False, unique=False, nullable=True
     )
-    alert_trigger_date = db.Column(
-        db.DateTime, index=False, unique=False, nullable=True
-    )
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
