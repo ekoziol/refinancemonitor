@@ -165,3 +165,25 @@ def unsubscribed_user(app, db_session):
     db_session.add(user)
     db_session.commit()
     return user
+
+
+@pytest.fixture
+def sample_rates():
+    """Sample rate data for testing."""
+    return {
+        30: 0.0694,  # 6.94%
+        15: 0.0625,  # 6.25%
+        5: 0.0580,   # 5.80% (5/1 ARM)
+    }
+
+
+@pytest.fixture
+def mock_api_response():
+    """Mock API response data."""
+    return [
+        {
+            '30_year_frm': 6.94,
+            '15_year_frm': 6.25,
+            '5_1_arm': 5.80,
+        }
+    ]
