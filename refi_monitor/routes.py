@@ -1,13 +1,15 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert
+from . import db
+from .models import Mortgage, Alert, User
 from .plots import *
 from .scheduler import trigger_manual_check
+from .notifications import send_unsubscribe_confirmation
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -138,3 +140,51 @@ def admin_trigger_alerts():
         return jsonify({'status': 'success', 'message': result}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@main_bp.route("/unsubscribe/<token>", methods=['GET', 'POST'])
+def unsubscribe(token):
+    """
+    Handle email unsubscribe requests via token.
+    GET: Show confirmation page
+    POST: Process unsubscribe
+    """
+    user = User.query.filter_by(unsubscribe_token=token).first()
+
+    if not user:
+        return render_template(
+            'unsubscribe.jinja2',
+            title='Invalid Link',
+            error='This unsubscribe link is invalid or has expired.',
+            success=False
+        ), 404
+
+    if request.method == 'POST':
+        user.email_unsubscribed = True
+        db.session.commit()
+        send_unsubscribe_confirmation(user.id)
+        return render_template(
+            'unsubscribe.jinja2',
+            title='Unsubscribed',
+            success=True,
+            user_email=user.email
+        )
+
+    return render_template(
+        'unsubscribe.jinja2',
+        title='Confirm Unsubscribe',
+        success=False,
+        confirm=True,
+        user_email=user.email
+    )
+
+
+@main_bp.route("/resubscribe", methods=['POST'])
+@login_required
+def resubscribe():
+    """
+    Allow logged-in users to resubscribe to emails.
+    """
+    current_user.email_unsubscribed = False
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': 'You have been resubscribed to emails.'})

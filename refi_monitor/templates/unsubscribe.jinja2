@@ -1,0 +1,47 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<div class="unsubscribe-container" style="max-width: 500px; margin: 50px auto; padding: 30px; text-align: center; font-family: Arial, sans-serif;">
+  <h1 style="color: #333;">{{ title }}</h1>
+
+  {% if error %}
+  <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p>{{ error }}</p>
+  </div>
+  <p style="margin-top: 20px;">
+    <a href="/" style="color: #4CAF50;">Return to homepage</a>
+  </p>
+
+  {% elif success %}
+  <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p><strong>Success!</strong> You have been unsubscribed.</p>
+    <p>{{ user_email }} will no longer receive emails from RefiAlert.</p>
+  </div>
+  <p style="color: #666; margin-top: 20px;">
+    Your account and alerts are still active. You can log in anytime to check your dashboard.
+  </p>
+  <p style="margin-top: 20px;">
+    <a href="/" style="color: #4CAF50;">Return to homepage</a>
+  </p>
+
+  {% elif confirm %}
+  <div style="background-color: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 15px; border-radius: 5px; margin: 20px 0;">
+    <p>Are you sure you want to unsubscribe <strong>{{ user_email }}</strong> from all RefiAlert emails?</p>
+  </div>
+  <p style="color: #666;">You will no longer receive:</p>
+  <ul style="text-align: left; color: #666; max-width: 300px; margin: 10px auto;">
+    <li>Alert trigger notifications</li>
+    <li>Payment confirmations</li>
+    <li>Marketing emails</li>
+  </ul>
+  <form method="POST" style="margin-top: 20px;">
+    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">
+      Yes, Unsubscribe
+    </button>
+    <a href="/" style="display: inline-block; background-color: #6c757d; color: white; padding: 12px 30px; border-radius: 5px; text-decoration: none; font-size: 16px;">
+      Cancel
+    </a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

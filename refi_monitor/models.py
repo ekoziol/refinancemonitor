@@ -1,3 +1,4 @@
+import secrets
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,6 +20,8 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    email_unsubscribed = db.Column(db.Boolean, default=False, nullable=False)
+    unsubscribe_token = db.Column(db.String(64), unique=True, nullable=True, index=True)
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):
@@ -28,6 +31,12 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+
+    def generate_unsubscribe_token(self):
+        """Generate a unique unsubscribe token for this user."""
+        if not self.unsubscribe_token:
+            self.unsubscribe_token = secrets.token_urlsafe(32)
+        return self.unsubscribe_token
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
@@ -106,6 +115,48 @@ class Trigger(db.Model):
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+
+class EmailLog(db.Model):
+    """Email delivery tracking and history."""
+
+    __tablename__ = 'email_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    email_type = db.Column(
+        db.Enum(
+            'alert_triggered', 'payment_confirmation', 'welcome',
+            'alert_created', 'unsubscribe_confirmation',
+            name='email_type_enum'
+        ),
+        nullable=False,
+        index=True
+    )
+    recipient_email = db.Column(db.String(100), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    status = db.Column(
+        db.Enum(
+            'pending', 'sent', 'delivered', 'failed', 'bounced',
+            name='email_status_enum'
+        ),
+        nullable=False,
+        default='pending',
+        index=True
+    )
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id'), nullable=True)
+    trigger_id = db.Column(db.Integer, db.ForeignKey('trigger.id'), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)
+    sent_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
+    updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('email_logs', lazy='dynamic'))
+
+    def __repr__(self):
+        return '<EmailLog {} to {} - {}>'.format(
+            self.email_type, self.recipient_email, self.status
+        )
 
 
 class MortgageRate(db.Model):
