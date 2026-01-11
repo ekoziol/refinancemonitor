@@ -26,7 +26,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from refi_monitor import create_app, db
+from refi_monitor import init_app as create_app, db
 from refi_monitor.models import MortgageRate
 
 
