@@ -42,6 +42,16 @@ def init_app():
         app.register_blueprint(routes.main_bp)
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
+
+        # Register CLI commands
+        from . import cli
+        cli.register_commands(app)
+
+        # Initialize scheduler for automated tasks
+        if app.config.get('ENABLE_SCHEDULER', True):
+            from .scheduler import init_scheduler
+            init_scheduler(app)
+
         # Compile static assets
         compile_static_assets(assets)
         db.create_all()

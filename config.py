@@ -31,6 +31,11 @@ class Config:
 
     STRIPE_API_KEY = environ.get("STRIPE_API_KEY")
 
+    # Scheduler Config
+    RATE_UPDATE_HOUR = int(environ.get("RATE_UPDATE_HOUR", "9"))  # 9 AM EST default
+    RATE_UPDATE_MINUTE = int(environ.get("RATE_UPDATE_MINUTE", "0"))  # 00 minutes default
+    ENABLE_SCHEDULER = environ.get("ENABLE_SCHEDULER", "true").lower() == "true"
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'
