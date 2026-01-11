@@ -46,6 +46,11 @@ def init_app():
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
 
+        # Register API blueprint (CSRF exempt for React frontend)
+        from . import api
+        csrf.exempt(api.api_bp)
+        app.register_blueprint(api.api_bp)
+
         # Register CLI commands
         from . import cli
         cli.register_commands(app)
