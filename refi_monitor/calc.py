@@ -132,15 +132,72 @@ def time_to_even(cost, monthly_savings):
 
 
 def calculate_recoup_data(
-    original_monthly_payment, refi_monthly_payment, target_term, refi_cost
+    original_monthly_payment,
+    refi_monthly_payment,
+    target_term,
+    refi_cost,
+    target_rate=None,
+    remaining_principal=None,
+    original_term=None,
+    original_rate=None,
+    original_principal=None,
+    months_paid=0,
 ):
-    # need to show both savings from change in monthly payment
-    # and savings from pure interest
+    """
+    Calculate recoup data showing monthly savings and interest-based savings over time.
 
+    Args:
+        original_monthly_payment: Original loan monthly payment
+        refi_monthly_payment: Refinanced loan monthly payment
+        target_term: Target term in months
+        refi_cost: Cost to refinance
+        target_rate: Target interest rate (decimal)
+        remaining_principal: Remaining principal to refinance
+        original_term: Original loan term in months
+        original_rate: Original interest rate (decimal)
+        original_principal: Original loan principal
+        months_paid: Months already paid on original loan
+
+    Returns:
+        DataFrame with monthly_savings and interest_refi_savings columns
+    """
     df = pd.DataFrame({"month": range(0, target_term + 1)})
+
+    # Simple monthly savings (cumulative)
     df['monthly_savings'] = (original_monthly_payment - refi_monthly_payment) * df[
         'month'
     ] - refi_cost
-    #     df['interest_savings'] =
+
+    # Interest-based savings calculation
+    if all(v is not None for v in [target_rate, remaining_principal, original_term,
+                                    original_rate, original_principal]):
+        # Total interest over original loan life
+        original_total_interest = ipmt_total(original_rate, original_term, original_principal)
+
+        # Interest already paid
+        if months_paid > 0:
+            interest_paid_to_date = ipmt_total(
+                original_rate, original_term, original_principal,
+                per=np.arange(0, months_paid)
+            )
+        else:
+            interest_paid_to_date = 0
+
+        # Refi total interest
+        refi_total_interest = ipmt_total(target_rate, target_term, remaining_principal)
+
+        # Interest savings = original total - refi total - refi cost - interest already paid
+        interest_savings_total = (
+            original_total_interest - refi_total_interest - refi_cost - interest_paid_to_date
+        )
+
+        # Spread savings over the loan term
+        if target_term > 0:
+            monthly_interest_savings = interest_savings_total / target_term
+            df['interest_refi_savings'] = monthly_interest_savings * df['month'] - refi_cost
+        else:
+            df['interest_refi_savings'] = -refi_cost
+    else:
+        df['interest_refi_savings'] = np.nan
 
     return df
