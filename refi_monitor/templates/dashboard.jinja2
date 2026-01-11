@@ -1,9 +1,15 @@
 {% extends "main_layout.jinja2" %}
+{% from "widgets/notification_center.jinja2" import notification_center %}
 
 {% block pagecontent %}
 <b><h1 class="text-4xl text-center text-gray-800">Refinance Monitor Dashboard</h1></b>
 
-<table class="ml-72 mt-16">
+<!-- Notification Center Widget -->
+<div id="notifications" class="ml-72 mt-8 mr-8">
+    {{ notification_center(notifications, alerts_summary) }}
+</div>
+
+<table class="ml-72 mt-8">
 
 {% if mortgage_alerts|length < 1 %}
 <tr>
