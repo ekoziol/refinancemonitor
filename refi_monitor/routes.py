@@ -1,13 +1,15 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request, flash
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from .models import Mortgage, Alert, User
 from .plots import *
 from .scheduler import trigger_manual_check
+from . import db
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -138,3 +140,53 @@ def admin_trigger_alerts():
         return jsonify({'status': 'success', 'message': result}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@main_bp.route("/unsubscribe/<token>", methods=['GET', 'POST'])
+def unsubscribe(token):
+    """
+    Handle email unsubscribe requests.
+    GET: Display unsubscribe confirmation page
+    POST: Process the unsubscribe request
+    """
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+    try:
+        # Token valid for 30 days
+        email = serializer.loads(token, salt='unsubscribe', max_age=2592000)
+    except SignatureExpired:
+        return render_template(
+            'emails/unsubscribe_error.html',
+            error_type='expired',
+            message='This unsubscribe link has expired. Please use the link from a more recent email.'
+        )
+    except BadSignature:
+        return render_template(
+            'emails/unsubscribe_error.html',
+            error_type='invalid',
+            message='This unsubscribe link is invalid.'
+        )
+
+    if request.method == 'POST':
+        # Find user and deactivate their alerts
+        user = User.query.filter_by(email=email).first()
+        if user:
+            # Deactivate all active alerts for this user
+            alerts = Alert.query.filter_by(user_id=user.id).all()
+            for alert in alerts:
+                if alert.payment_status == 'active':
+                    alert.payment_status = 'unsubscribed'
+            db.session.commit()
+            app.logger.info(f"User {email} unsubscribed from alerts")
+
+        return render_template(
+            'emails/unsubscribe_success.html',
+            email=email
+        )
+
+    # GET request - show confirmation page
+    return render_template(
+        'emails/unsubscribe_confirm.html',
+        email=email,
+        token=token
+    )
