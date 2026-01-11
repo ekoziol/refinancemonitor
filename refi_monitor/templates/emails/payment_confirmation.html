@@ -1,0 +1,223 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Payment Confirmed - RefiAlert{% endblock %}
+
+{% block preview_text %}Thank you for your payment! Your RefiAlert subscription is now active.{% endblock %}
+
+{% block header_subtitle %}
+<p style="margin: 10px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px;">
+    Payment Confirmation
+</p>
+{% endblock %}
+
+{% block content %}
+<!-- Success banner -->
+<tr>
+    <td style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); padding: 25px 40px; border-left: 4px solid #22c55e;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="vertical-align: middle; padding-right: 15px; width: 50px;">
+                    <div style="width: 48px; height: 48px; background-color: #22c55e; border-radius: 50%; text-align: center; line-height: 48px; font-size: 24px;">
+                        &#10003;
+                    </div>
+                </td>
+                <td style="vertical-align: middle;">
+                    <h2 style="margin: 0 0 4px 0; color: #166534; font-size: 20px; font-weight: 700;">
+                        Payment Successful!
+                    </h2>
+                    <p style="margin: 0; color: #15803d; font-size: 14px;">
+                        Your subscription is now active
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Thank you message -->
+<tr>
+    <td style="padding: 30px 40px 20px 40px;">
+        <h2 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 22px; font-weight: 600;">
+            Thank you for your payment!
+        </h2>
+        <p style="margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+            Your RefiAlert subscription has been activated. We'll start monitoring mortgage rates for you immediately.
+        </p>
+    </td>
+</tr>
+
+<!-- Order details -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <tr>
+                <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Order Details
+                    </h3>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="color: #6b7280; font-size: 14px;">Alert ID</td>
+                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">
+                                            #{{ alert_id }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="color: #6b7280; font-size: 14px;">Status</td>
+                                        <td style="text-align: right;">
+                                            <span style="display: inline-block; background-color: #dcfce7; color: #166534; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 12px;">
+                                                {{ payment_status|upper }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="color: #6b7280; font-size: 14px;">Subscription</td>
+                                        <td style="color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">
+                                            RefiAlert Monitoring
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- What happens next -->
+<tr>
+    <td style="padding: 0 40px 30px 40px;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 600;">
+            What Happens Next?
+        </h3>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="padding: 12px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 44px; vertical-align: top;">
+                                <div style="width: 36px; height: 36px; background-color: #dbeafe; border-radius: 8px; text-align: center; line-height: 36px; font-size: 16px;">
+                                    &#128269;
+                                </div>
+                            </td>
+                            <td style="padding-left: 12px; vertical-align: top;">
+                                <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">
+                                    Continuous Monitoring
+                                </p>
+                                <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                                    We'll track market rates daily and compare them against your alert criteria
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 12px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 44px; vertical-align: top;">
+                                <div style="width: 36px; height: 36px; background-color: #fef3c7; border-radius: 8px; text-align: center; line-height: 36px; font-size: 16px;">
+                                    &#128276;
+                                </div>
+                            </td>
+                            <td style="padding-left: 12px; vertical-align: top;">
+                                <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">
+                                    Instant Alerts
+                                </p>
+                                <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                                    Receive immediate email notifications when your refinancing conditions are met
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 12px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 44px; vertical-align: top;">
+                                <div style="width: 36px; height: 36px; background-color: #dcfce7; border-radius: 8px; text-align: center; line-height: 36px; font-size: 16px;">
+                                    &#128176;
+                                </div>
+                            </td>
+                            <td style="padding-left: 12px; vertical-align: top;">
+                                <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">
+                                    Potential Savings
+                                </p>
+                                <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                                    Get detailed breakdowns of potential savings when opportunities arise
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- CTA -->
+<tr>
+    <td style="padding: 0 40px 30px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="text-align: center;">
+                    <a href="{{ app_url }}/dashboard" class="mobile-button" style="display: inline-block; background-color: #1a5f2a; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px; text-align: center;">
+                        View Your Dashboard
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: center; padding-top: 12px;">
+                    <a href="{{ app_url }}/manage" style="color: #1a5f2a; font-size: 14px; text-decoration: none; font-weight: 500;">
+                        Manage Your Alerts &rarr;
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Receipt note -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+            <tr>
+                <td style="padding: 16px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 24px; vertical-align: top; padding-right: 10px;">
+                                <span style="font-size: 16px;">&#128196;</span>
+                            </td>
+                            <td>
+                                <p style="margin: 0; color: #1e40af; font-size: 13px; line-height: 1.5;">
+                                    A receipt for this payment has been sent to your email. You can also view your billing history in your account settings.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{% endblock %}

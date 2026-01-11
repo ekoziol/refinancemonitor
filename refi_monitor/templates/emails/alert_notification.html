@@ -1,0 +1,344 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Refinancing Opportunity - {{ mortgage_name }}{% endblock %}
+
+{% block preview_text %}Great news! Your refinancing alert for {{ mortgage_name }} has been triggered. Current conditions match your target.{% endblock %}
+
+{% block header_subtitle %}
+<p style="margin: 10px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px;">
+    Mortgage Refinancing Alert
+</p>
+{% endblock %}
+
+{% block content %}
+<!-- Alert banner -->
+<tr>
+    <td style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px 40px; border-left: 4px solid #f59e0b;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="vertical-align: middle; padding-right: 15px; width: 50px;">
+                    <div style="width: 48px; height: 48px; background-color: #f59e0b; border-radius: 50%; text-align: center; line-height: 48px; font-size: 24px;">
+                        &#128276;
+                    </div>
+                </td>
+                <td style="vertical-align: middle;">
+                    <h2 style="margin: 0 0 4px 0; color: #92400e; font-size: 18px; font-weight: 700;">
+                        Refinancing Opportunity Detected!
+                    </h2>
+                    <p style="margin: 0; color: #a16207; font-size: 14px;">
+                        {{ trigger_date }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Greeting -->
+<tr>
+    <td style="padding: 30px 40px 20px 40px;">
+        <h2 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 22px; font-weight: 600;">
+            Great news, {{ user_name }}!
+        </h2>
+        <p style="margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+            Your refinancing alert for <strong>{{ mortgage_name }}</strong> has been triggered. Based on current market conditions, now may be a good time to explore refinancing options.
+        </p>
+    </td>
+</tr>
+
+<!-- Alert details box -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+            <tr>
+                <td style="padding: 20px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="padding-bottom: 12px;">
+                                <p style="margin: 0; color: #166534; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Alert Type
+                                </p>
+                                <p style="margin: 4px 0 0 0; color: #15803d; font-size: 16px; font-weight: 600;">
+                                    {{ alert_type }}
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p style="margin: 0; color: #166534; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Reason
+                                </p>
+                                <p style="margin: 4px 0 0 0; color: #374151; font-size: 14px;">
+                                    {{ trigger_reason }}
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Current mortgage details -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            Current Mortgage Details
+        </h3>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Remaining Principal</td>
+                            <td style="color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">
+                                ${{ "{:,.2f}".format(remaining_principal) }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Current Interest Rate</td>
+                            <td style="color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">
+                                {{ "{:.2f}".format(original_rate) }}%
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Remaining Term</td>
+                            <td style="color: #1a1a1a; font-size: 14px; font-weight: 600; text-align: right;">
+                                {{ remaining_term }} months
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Target refinancing goals -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            Your Refinancing Goals
+        </h3>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            {% if target_monthly_payment %}
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Target Monthly Payment</td>
+                            <td style="color: #15803d; font-size: 14px; font-weight: 600; text-align: right;">
+                                ${{ "{:,.2f}".format(target_monthly_payment) }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            {% endif %}
+            {% if target_interest_rate %}
+            <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Target Interest Rate</td>
+                            <td style="color: #15803d; font-size: 14px; font-weight: 600; text-align: right;">
+                                {{ "{:.2f}".format(target_interest_rate) }}%
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="padding: 8px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="color: #6b7280; font-size: 14px;">Target Term</td>
+                            <td style="color: #15803d; font-size: 14px; font-weight: 600; text-align: right;">
+                                {{ target_term }} months
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Rate trend chart placeholder -->
+{% if show_rate_chart %}
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            Recent Rate Trends
+        </h3>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb; border-radius: 8px;">
+            <tr>
+                <td style="padding: 20px; text-align: center;">
+                    {% if rate_chart_url %}
+                    <img src="{{ rate_chart_url }}" alt="Rate Trend Chart" style="max-width: 100%; height: auto; border-radius: 4px;">
+                    {% else %}
+                    <!-- Placeholder visualization -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="height: 120px; vertical-align: bottom;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                    <tr>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #bbf7d0; height: 80px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #86efac; height: 70px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #4ade80; height: 85px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #22c55e; height: 60px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #16a34a; height: 55px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #15803d; height: 45px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                        <td style="width: 14%; text-align: center; vertical-align: bottom; padding: 0 2px;">
+                                            <div style="background-color: #166534; height: 40px; border-radius: 4px 4px 0 0;"></div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 8px;">
+                                <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center;">
+                                    30-Year Fixed Rate Trend (Last 7 Days) - Rates are falling
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{% endif %}
+
+<!-- Next steps -->
+<tr>
+    <td style="padding: 0 40px 30px 40px;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 16px; font-weight: 600;">
+            Recommended Next Steps
+        </h3>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 32px; vertical-align: top;">
+                                <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; color: #15803d; font-size: 12px; font-weight: 700;">1</div>
+                            </td>
+                            <td style="color: #4a5568; font-size: 14px; padding-left: 8px;">
+                                Review current market rates using our calculator
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 32px; vertical-align: top;">
+                                <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; color: #15803d; font-size: 12px; font-weight: 700;">2</div>
+                            </td>
+                            <td style="color: #4a5568; font-size: 14px; padding-left: 8px;">
+                                Calculate your potential savings with new terms
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 32px; vertical-align: top;">
+                                <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; color: #15803d; font-size: 12px; font-weight: 700;">3</div>
+                            </td>
+                            <td style="color: #4a5568; font-size: 14px; padding-left: 8px;">
+                                Contact lenders for refinancing quotes
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                            <td style="width: 32px; vertical-align: top;">
+                                <div style="width: 24px; height: 24px; background-color: #dcfce7; border-radius: 50%; text-align: center; line-height: 24px; color: #15803d; font-size: 12px; font-weight: 700;">4</div>
+                            </td>
+                            <td style="color: #4a5568; font-size: 14px; padding-left: 8px;">
+                                Compare closing costs vs. long-term savings
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Primary CTA -->
+<tr>
+    <td style="padding: 0 40px 30px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+                <td style="text-align: center;">
+                    <a href="{{ app_url }}/calculator" class="mobile-button" style="display: inline-block; background-color: #1a5f2a; color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px; text-align: center;">
+                        Calculate Your Savings
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align: center; padding-top: 12px;">
+                    <a href="{{ app_url }}/dashboard" style="color: #1a5f2a; font-size: 14px; text-decoration: none; font-weight: 500;">
+                        View Your Dashboard &rarr;
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Disclaimer -->
+<tr>
+    <td style="padding: 0 40px 20px 40px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f9fafb; border-radius: 8px;">
+            <tr>
+                <td style="padding: 16px;">
+                    <p style="margin: 0; color: #6b7280; font-size: 12px; line-height: 1.5;">
+                        <strong>Disclaimer:</strong> This alert is for informational purposes only and does not constitute financial advice. Actual refinancing terms may vary based on credit score, market conditions, and lender requirements. Please consult with a licensed mortgage professional before making any decisions.
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{% endblock %}
