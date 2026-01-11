@@ -46,6 +46,37 @@ class Config:
     MAIL_PASSWORD = environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = environ.get("MAIL_DEFAULT_SENDER", "noreply@refialert.com")
 
+    # Analytics Configuration
+    GA4_MEASUREMENT_ID = environ.get("GA4_MEASUREMENT_ID", "G-KN2200EH78")
+    GOOGLE_SITE_VERIFICATION = environ.get("GOOGLE_SITE_VERIFICATION")
+
+    # Content Distribution Configuration
+    SITE_URL = environ.get("SITE_URL", "https://refi-alert.com")
+    SITE_NAME = environ.get("SITE_NAME", "RefiAlert")
+    SITE_DESCRIPTION = environ.get(
+        "SITE_DESCRIPTION",
+        "Monitor mortgage rates and get alerts when it's time to refinance"
+    )
+
+    # Social Media API Keys (for automated posting)
+    TWITTER_API_KEY = environ.get("TWITTER_API_KEY")
+    TWITTER_API_SECRET = environ.get("TWITTER_API_SECRET")
+    TWITTER_ACCESS_TOKEN = environ.get("TWITTER_ACCESS_TOKEN")
+    TWITTER_ACCESS_TOKEN_SECRET = environ.get("TWITTER_ACCESS_TOKEN_SECRET")
+
+    LINKEDIN_CLIENT_ID = environ.get("LINKEDIN_CLIENT_ID")
+    LINKEDIN_CLIENT_SECRET = environ.get("LINKEDIN_CLIENT_SECRET")
+    LINKEDIN_ACCESS_TOKEN = environ.get("LINKEDIN_ACCESS_TOKEN")
+
+    # Newsletter Configuration (SendGrid)
+    SENDGRID_API_KEY = environ.get("SENDGRID_API_KEY")
+    NEWSLETTER_FROM_EMAIL = environ.get("NEWSLETTER_FROM_EMAIL", "newsletter@refi-alert.com")
+    NEWSLETTER_FROM_NAME = environ.get("NEWSLETTER_FROM_NAME", "RefiAlert Newsletter")
+
+    # Content Publishing Settings
+    PUBLISH_HOUR = int(environ.get("PUBLISH_HOUR", "8"))  # 8 AM default
+    PUBLISH_TIMEZONE = environ.get("PUBLISH_TIMEZONE", "America/New_York")
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'

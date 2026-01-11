@@ -32,6 +32,7 @@ def init_app():
         from . import routes
         from . import auth
         from . import mortgage
+        from . import distribution_routes
         from .assets import compile_static_assets
         from .models import User, Mortgage, Mortgage_Tracking, Alert, Trigger
 
@@ -45,6 +46,11 @@ def init_app():
         app.register_blueprint(routes.main_bp)
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
+        app.register_blueprint(distribution_routes.distribution_bp)
+
+        # Initialize content distribution services
+        from .distribution import init_distribution
+        init_distribution(app)
 
         # Register CLI commands
         from . import cli
