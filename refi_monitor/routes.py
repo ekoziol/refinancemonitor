@@ -1,97 +1,91 @@
 """Routes for parent Flask app."""
 import os
+from datetime import datetime, timedelta
 from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert, Trigger
+from .models import Mortgage, Alert, MortgageRate
 from .plots import *
 from .scheduler import trigger_manual_check
+from . import db
+from sqlalchemy import func
 
 
-def get_user_notifications(user_id, limit=10):
+def get_mortgage_overview(user_id):
     """
-    Fetch recent notifications/triggers for a user.
+    Calculate overview metrics for the user's mortgages.
 
-    Args:
-        user_id: The user's ID
-        limit: Maximum number of notifications to return
-
-    Returns:
-        List of notification dictionaries
+    Returns dict with:
+        - total_mortgages: count of user's mortgages
+        - total_principal: sum of remaining principal
+        - avg_user_rate: average rate across user's mortgages
+        - current_30yr_rate: latest 30-year market rate
+        - current_15yr_rate: latest 15-year market rate
+        - rate_change_30yr: change from previous rate (positive = up)
+        - potential_savings: estimated monthly savings if refinancing
     """
-    # Get user's mortgages and alerts
+    # Get user's mortgages
     mortgages = Mortgage.query.filter_by(user_id=user_id).all()
-    mortgage_ids = [m.id for m in mortgages]
 
-    if not mortgage_ids:
-        return []
+    if not mortgages:
+        return None
 
-    # Get alerts for these mortgages
-    alerts = Alert.query.filter(Alert.mortgage_id.in_(mortgage_ids)).all()
-    alert_ids = [a.id for a in alerts]
+    total_mortgages = len(mortgages)
+    total_principal = sum(m.remaining_principal for m in mortgages)
 
-    if not alert_ids:
-        return []
+    # Calculate weighted average rate (weighted by principal)
+    weighted_rate_sum = sum(
+        m.original_interest_rate * m.remaining_principal
+        for m in mortgages
+    )
+    avg_user_rate = weighted_rate_sum / total_principal if total_principal > 0 else 0
 
-    # Get triggers (notifications) for these alerts
-    triggers = Trigger.query.filter(
-        Trigger.alert_id.in_(alert_ids)
-    ).order_by(Trigger.created_on.desc()).limit(limit).all()
+    # Get latest market rates from MortgageRate table
+    # Look for most recent 30-year (360 months) and 15-year (180 months) rates
+    latest_30yr = MortgageRate.query.filter_by(term_months=360).order_by(
+        MortgageRate.rate_date.desc()
+    ).first()
 
-    notifications = []
-    for trigger in triggers:
-        alert = Alert.query.get(trigger.alert_id)
-        mortgage = Mortgage.query.get(alert.mortgage_id) if alert else None
+    latest_15yr = MortgageRate.query.filter_by(term_months=180).order_by(
+        MortgageRate.rate_date.desc()
+    ).first()
 
-        notifications.append({
-            'type': 'trigger',
-            'title': f'Alert Triggered: {mortgage.name if mortgage else "Unknown"}',
-            'message': trigger.alert_trigger_reason,
-            'date': trigger.alert_trigger_date.strftime('%b %d, %Y at %I:%M %p') if trigger.alert_trigger_date else 'N/A',
-            'is_new': trigger.alert_trigger_status == 1,  # Assuming 1 = new/unread
-            'trigger_id': trigger.id,
-            'alert_id': trigger.alert_id
-        })
+    # Get previous 30yr rate for change calculation
+    previous_30yr = None
+    if latest_30yr:
+        previous_30yr = MortgageRate.query.filter(
+            MortgageRate.term_months == 360,
+            MortgageRate.rate_date < latest_30yr.rate_date
+        ).order_by(MortgageRate.rate_date.desc()).first()
 
-    return notifications
+    current_30yr_rate = latest_30yr.rate if latest_30yr else 0.0650  # Default fallback
+    current_15yr_rate = latest_15yr.rate if latest_15yr else 0.0580  # Default fallback
 
+    # Calculate rate change
+    rate_change_30yr = 0
+    if latest_30yr and previous_30yr:
+        rate_change_30yr = latest_30yr.rate - previous_30yr.rate
 
-def get_alerts_summary(user_id):
-    """
-    Get summary counts of user's alerts.
+    # Estimate potential savings (simplified calculation)
+    # If user's average rate > current 30yr rate, calculate monthly savings
+    potential_savings = 0
+    if avg_user_rate > current_30yr_rate and total_principal > 0:
+        # Simplified: savings = principal * (rate_diff / 12)
+        rate_diff = avg_user_rate - current_30yr_rate
+        potential_savings = total_principal * (rate_diff / 12)
 
-    Args:
-        user_id: The user's ID
-
-    Returns:
-        Dictionary with active, triggered, and inactive counts
-    """
-    mortgages = Mortgage.query.filter_by(user_id=user_id).all()
-    mortgage_ids = [m.id for m in mortgages]
-
-    if not mortgage_ids:
-        return {'active': 0, 'triggered': 0, 'inactive': 0}
-
-    alerts = Alert.query.filter(Alert.mortgage_id.in_(mortgage_ids)).all()
-
-    active = 0
-    triggered = 0
-    inactive = 0
-
-    for alert in alerts:
-        if alert.payment_status == 'active':
-            # Check if this alert has been triggered
-            trigger_count = Trigger.query.filter_by(alert_id=alert.id).count()
-            if trigger_count > 0:
-                triggered += 1
-            else:
-                active += 1
-        else:
-            inactive += 1
-
-    return {'active': active, 'triggered': triggered, 'inactive': inactive}
+    return {
+        'total_mortgages': total_mortgages,
+        'total_principal': total_principal,
+        'avg_user_rate': avg_user_rate * 100,  # Convert to percentage
+        'current_30yr_rate': current_30yr_rate * 100,
+        'current_15yr_rate': current_15yr_rate * 100,
+        'rate_change_30yr': rate_change_30yr * 100,  # basis points style
+        'potential_savings': potential_savings,
+        'rate_date': latest_30yr.rate_date if latest_30yr else None
+    }
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -154,9 +148,8 @@ def dashboard():
         if matched == 0:
             mortgage_alerts.append([m, None, None, None])
 
-    # Get notification center data
-    notifications = get_user_notifications(current_user.id)
-    alerts_summary = get_alerts_summary(current_user.id)
+    # Get mortgage overview metrics
+    overview = get_mortgage_overview(current_user.id)
 
     return render_template(
         'dashboard.jinja2',
@@ -167,8 +160,7 @@ def dashboard():
         mortgages=mortgages,
         alerts=alerts,
         mortgage_alerts=mortgage_alerts,
-        notifications=notifications,
-        alerts_summary=alerts_summary,
+        overview=overview,
     )
 
 
@@ -245,23 +237,6 @@ def logout():
     """User log-out logic."""
     logout_user()
     return redirect(url_for('auth_bp.login'))
-
-
-@main_bp.route("/api/notifications", methods=['GET'])
-@login_required
-def api_notifications():
-    """
-    API endpoint to fetch user notifications.
-    Returns JSON data for AJAX updates to the notification center.
-    """
-    notifications = get_user_notifications(current_user.id)
-    alerts_summary = get_alerts_summary(current_user.id)
-
-    return jsonify({
-        'status': 'success',
-        'notifications': notifications,
-        'alerts_summary': alerts_summary
-    }), 200
 
 
 @main_bp.route("/admin/trigger-alerts", methods=['POST'])
