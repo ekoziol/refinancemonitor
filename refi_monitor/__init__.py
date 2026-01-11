@@ -33,7 +33,7 @@ def init_app():
         from . import auth
         from . import mortgage
         from .assets import compile_static_assets
-        from .models import User, Mortgage, Mortgage_Tracking, Alert, Trigger
+        from .models import User, Mortgage, Mortgage_Tracking, Alert, Trigger, MortgageRate
 
         # import dash app
         # from .plotlydash.dashboard import init_dashboard
