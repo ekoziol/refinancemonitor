@@ -1,12 +1,17 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
 from .models import Mortgage, Alert
-from .plots import *
+from .plots import (
+    status_target_payment_plot,
+    time_target_plot,
+    rate_history_plot,
+    get_rate_history_data
+)
 from .scheduler import trigger_manual_check
 
 # Blueprint Configuration
@@ -63,12 +68,25 @@ def dashboard():
         matched = 0
         for a in alerts:
             if m.id == a.mortgage_id:
+                # Get rate history chart with user's current rate and target rate
+                rate_chart = rate_history_plot(
+                    zip_code=m.zip_code,
+                    term_months=m.original_term,
+                    target_rate=a.target_interest_rate / 100 if a.target_interest_rate else None,
+                    current_rate=m.original_interest_rate / 100 if m.original_interest_rate else None
+                )
                 mortgage_alerts.append(
-                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id)]
+                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id), rate_chart]
                 )
                 matched += 1
         if matched == 0:
-            mortgage_alerts.append([m, None, None, None])
+            # Show general rate history for users without alerts
+            rate_chart = rate_history_plot(
+                zip_code=m.zip_code,
+                term_months=m.original_term,
+                current_rate=m.original_interest_rate / 100 if m.original_interest_rate else None
+            )
+            mortgage_alerts.append([m, None, None, None, rate_chart])
 
     return render_template(
         'dashboard.jinja2',
@@ -138,3 +156,33 @@ def admin_trigger_alerts():
         return jsonify({'status': 'success', 'message': result}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@main_bp.route("/api/rates/history", methods=['GET'])
+@login_required
+def api_rate_history():
+    """
+    API endpoint to fetch rate history data as JSON.
+
+    Query params:
+        zip_code: Filter by zip code (optional)
+        term_months: Filter by term in months (optional)
+        days: Number of days of history (default 365)
+
+    Returns:
+        JSON array of rate history records
+    """
+    zip_code = request.args.get('zip_code')
+    term_months = request.args.get('term_months', type=int)
+    days = request.args.get('days', default=365, type=int)
+
+    # Limit days to reasonable range
+    days = min(max(days, 1), 730)
+
+    data = get_rate_history_data(zip_code=zip_code, term_months=term_months, days=days)
+
+    return jsonify({
+        'status': 'success',
+        'count': len(data),
+        'data': data
+    })
