@@ -102,17 +102,15 @@ def editmortgage(m_id):
     form.credit_score.data = existing_mortgage.credit_score
 
     if form.validate_on_submit():
-        existing_mortgage.user_id = (current_user.id,)
-        existing_mortgage.name = (form.name.data,)
-        existing_mortgage.zip_code = (form.zip_code.data,)
-        existing_mortgage.original_principal = (form.original_principal.data,)
-        existing_mortgage.original_term = (form.original_term.data * 12,)
-        existing_mortgage.original_interest_rate = (
-            form.original_interest_rate.data / 100,
-        )
-        existing_mortgage.remaining_principal = (form.remaining_principal.data,)
-        existing_mortgage.remaining_term = (form.remaining_term.data,)
-        existing_mortgage.credit_score = (form.credit_score.data,)
+        existing_mortgage.user_id = current_user.id
+        existing_mortgage.name = form.name.data
+        existing_mortgage.zip_code = form.zip_code.data
+        existing_mortgage.original_principal = form.original_principal.data
+        existing_mortgage.original_term = form.original_term.data * 12
+        existing_mortgage.original_interest_rate = form.original_interest_rate.data / 100
+        existing_mortgage.remaining_principal = form.remaining_principal.data
+        existing_mortgage.remaining_term = form.remaining_term.data
+        existing_mortgage.credit_score = form.credit_score.data
 
         db.session.commit()  # Create new user
         # next_page = request.args.get('next')
@@ -221,11 +219,11 @@ def editalert(alert_id):
     form.estimate_refinance_cost.data = existing_alert.estimate_refinance_cost
 
     if form.validate_on_submit():
-        existing_alert.alert_type = (form.alert_type.data,)
-        existing_alert.target_monthly_payment = (form.target_monthly_payment.data,)
-        existing_alert.target_term = (form.target_term.data,)
-        existing_alert.target_interest_rate = (form.target_interest_rate.data,)
-        existing_alert.estimate_refinance_cost = (form.estimate_refinance_cost.data,)
+        existing_alert.alert_type = form.alert_type.data
+        existing_alert.target_monthly_payment = form.target_monthly_payment.data
+        existing_alert.target_term = form.target_term.data
+        existing_alert.target_interest_rate = form.target_interest_rate.data
+        existing_alert.estimate_refinance_cost = form.estimate_refinance_cost.data
 
         db.session.commit()
         db.session.flush()
