@@ -106,3 +106,25 @@ class Trigger(db.Model):
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+
+class MortgageRate(db.Model):
+    """Mortgage rate data model for tracking rates by zip code and term."""
+
+    __tablename__ = 'mortgage_rate'
+    id = db.Column(db.Integer, primary_key=True)
+    zip_code = db.Column(db.String(5), nullable=False, unique=False, index=True)
+    term_months = db.Column(db.Integer, nullable=False, unique=False, index=True)
+    rate = db.Column(db.Float, nullable=False, unique=False)
+    rate_date = db.Column(db.DateTime, nullable=False, unique=False, index=True)
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    __table_args__ = (
+        db.Index('ix_mortgage_rate_zip_term_date', 'zip_code', 'term_months', 'rate_date'),
+    )
+
+    def __repr__(self):
+        return '<MortgageRate {}: {} for {}-month term on {}>'.format(
+            self.zip_code, self.rate, self.term_months, self.rate_date
+        )
