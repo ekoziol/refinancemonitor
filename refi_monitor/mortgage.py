@@ -177,10 +177,9 @@ def addalert():
             db.session.flush()
             session['alert_id'] = alert.id
             session['m_id'] = m_id
+            return render_template('checkout.html')
 
         flash('Alert already exists for this mortgage')
-        # return redirect(url_for('mortgage_bp.create_checkout_session'), code=307)
-        return render_template('checkout.html')
         return redirect(url_for('mortgage_bp.checkout'))
     return render_template(
         'addalert.jinja2',
