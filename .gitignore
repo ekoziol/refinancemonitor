@@ -6,3 +6,6 @@ venv
 *.ipynb_checkpoints
 .beads/
 node_modules/
+.coverage
+.pytest_cache/
+htmlcov/
