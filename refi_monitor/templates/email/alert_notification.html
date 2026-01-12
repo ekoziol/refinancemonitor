@@ -1,0 +1,174 @@
+{% extends "email/base.html" %}
+
+{% block title %}Refinancing Opportunity - RefiAlert{% endblock %}
+
+{% block preheader %}Great news! A refinancing opportunity has been found for {{ mortgage_name }}.{% endblock %}
+
+{% block header_icon %}&#127968;{% endblock %}
+
+{% block content %}
+<h2 style="color: #22577A; font-size: 24px; font-weight: 600; margin: 0 0 20px 0;">
+    Great News, {{ user_name }}!
+</h2>
+
+<p style="margin: 0 0 16px 0; color: #555555; font-size: 16px; line-height: 1.6;">
+    Your refinancing alert has been triggered for <strong style="color: #22577A;">{{ mortgage_name }}</strong>.
+    This could be an excellent opportunity to save money on your mortgage.
+</p>
+
+<!-- Alert Box -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px 20px; border-radius: 0 4px 4px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding-bottom: 8px;">
+                        <strong style="color: #856404;">Alert Type:</strong>
+                        <span style="color: #856404;">{{ alert_type }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom: 8px;">
+                        <strong style="color: #856404;">Reason:</strong>
+                        <span style="color: #856404;">{{ trigger_reason }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong style="color: #856404;">Date:</strong>
+                        <span style="color: #856404;">{{ trigger_date }}</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Current Mortgage Details Card -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f8f9fa; padding: 24px; border-radius: 8px; border: 1px solid #e9ecef;">
+            <h3 style="color: #22577A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+                Current Mortgage Details
+            </h3>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #5f6988;">Remaining Principal</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef; text-align: right;">
+                        <strong style="color: #22577A;">${{ "{:,.2f}".format(remaining_principal) }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #5f6988;">Current Interest Rate</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef; text-align: right;">
+                        <strong style="color: #22577A;">{{ "{:.2f}".format(original_rate) }}%</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #5f6988;">Remaining Term</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                        <strong style="color: #22577A;">{{ remaining_term }} months</strong>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Target Refinancing Goals Card -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #e7f5fa; padding: 24px; border-radius: 8px; border: 1px solid #5eb9d7;">
+            <h3 style="color: #22577A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+                Target Refinancing Goals
+            </h3>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                {% if target_monthly_payment %}
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid rgba(94, 185, 215, 0.3);">
+                        <span style="color: #5f6988;">Target Monthly Payment</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid rgba(94, 185, 215, 0.3); text-align: right;">
+                        <strong style="color: #22577A;">${{ "{:,.2f}".format(target_monthly_payment) }}</strong>
+                    </td>
+                </tr>
+                {% endif %}
+                {% if target_interest_rate %}
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid rgba(94, 185, 215, 0.3);">
+                        <span style="color: #5f6988;">Target Interest Rate</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid rgba(94, 185, 215, 0.3); text-align: right;">
+                        <strong style="color: #22577A;">{{ "{:.2f}".format(target_interest_rate) }}%</strong>
+                    </td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #5f6988;">Target Term</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                        <strong style="color: #22577A;">{{ target_term }} months</strong>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Divider -->
+<hr style="border: 0; border-top: 1px solid #e9ecef; margin: 32px 0;">
+
+<!-- Next Steps -->
+<h3 style="color: #22577A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+    Recommended Next Steps
+</h3>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 12px 0; padding-left: 32px; position: relative;">
+            <span style="position: absolute; left: 0; color: #5eb9d7; font-weight: 600;">1.</span>
+            <span style="color: #555555;">Review current market rates on our dashboard</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0; padding-left: 32px; position: relative;">
+            <span style="position: absolute; left: 0; color: #5eb9d7; font-weight: 600;">2.</span>
+            <span style="color: #555555;">Calculate potential savings using our refinance calculator</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0; padding-left: 32px; position: relative;">
+            <span style="position: absolute; left: 0; color: #5eb9d7; font-weight: 600;">3.</span>
+            <span style="color: #555555;">Contact lenders for refinancing quotes</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0; padding-left: 32px; position: relative;">
+            <span style="position: absolute; left: 0; color: #5eb9d7; font-weight: 600;">4.</span>
+            <span style="color: #555555;">Compare closing costs vs. long-term savings</span>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 32px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{ dashboard_url }}" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #5eb9d7 0%, #22577A 100%); color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                View Your Dashboard
+            </a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 0; color: #888888; font-size: 14px; text-align: center;">
+    This is an excellent opportunity to save money on your mortgage. We recommend contacting your lender or a mortgage broker to discuss refinancing options.
+</p>
+{% endblock %}

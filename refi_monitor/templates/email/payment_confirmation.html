@@ -1,0 +1,148 @@
+{% extends "email/base.html" %}
+
+{% block title %}Payment Confirmed - RefiAlert{% endblock %}
+
+{% block preheader %}Thank you for your payment! Your RefiAlert subscription is now active.{% endblock %}
+
+{% block header_icon %}&#128179;{% endblock %}
+
+{% block content %}
+<!-- Success Box -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+    <tr>
+        <td style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 24px; border-radius: 0 4px 4px 0;">
+            <h2 style="color: #155724; font-size: 24px; font-weight: 600; margin: 0 0 12px 0;">
+                &#10003; Payment Confirmed
+            </h2>
+            <p style="color: #155724; font-size: 16px; margin: 0 0 8px 0;">
+                Thank you for your payment!
+            </p>
+            <p style="color: #155724; font-size: 16px; margin: 0;">
+                Your RefiAlert subscription is now <strong>{{ payment_status }}</strong>.
+            </p>
+        </td>
+    </tr>
+</table>
+
+<!-- Order Details Card -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #f8f9fa; padding: 24px; border-radius: 8px; border: 1px solid #e9ecef;">
+            <h3 style="color: #22577A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+                Subscription Details
+            </h3>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #5f6988;">Alert ID</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef; text-align: right;">
+                        <strong style="color: #22577A;">#{{ alert_id }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #5f6988;">Status</span>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef; text-align: right;">
+                        <span style="display: inline-block; background-color: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                            {{ payment_status | title }}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #5f6988;">Date</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                        <strong style="color: #22577A;">{{ payment_date }}</strong>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Divider -->
+<hr style="border: 0; border-top: 1px solid #e9ecef; margin: 32px 0;">
+
+<!-- What happens next -->
+<h3 style="color: #22577A; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">
+    What Happens Next?
+</h3>
+
+<p style="margin: 0 0 20px 0; color: #555555; font-size: 16px; line-height: 1.6;">
+    Your alert is now active and we'll monitor mortgage rates for you. You'll receive email notifications when your refinancing conditions are met.
+</p>
+
+<!-- Feature List -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+    <tr>
+        <td style="padding: 12px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="width: 40px; vertical-align: top;">
+                        <span style="display: inline-block; width: 28px; height: 28px; background-color: #e7f5fa; color: #5eb9d7; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px;">&#10003;</span>
+                    </td>
+                    <td style="vertical-align: top; padding-left: 8px;">
+                        <strong style="color: #22577A; font-size: 15px;">Continuous Market Monitoring</strong>
+                        <p style="color: #666666; font-size: 14px; margin: 4px 0 0 0;">We'll track mortgage rates 24/7 and compare them to your targets.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="width: 40px; vertical-align: top;">
+                        <span style="display: inline-block; width: 28px; height: 28px; background-color: #e7f5fa; color: #5eb9d7; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px;">&#10003;</span>
+                    </td>
+                    <td style="vertical-align: top; padding-left: 8px;">
+                        <strong style="color: #22577A; font-size: 15px;">Real-Time Alert Evaluation</strong>
+                        <p style="color: #666666; font-size: 14px; margin: 4px 0 0 0;">Your alert will be evaluated against current market conditions daily.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 12px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="width: 40px; vertical-align: top;">
+                        <span style="display: inline-block; width: 28px; height: 28px; background-color: #e7f5fa; color: #5eb9d7; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px;">&#10003;</span>
+                    </td>
+                    <td style="vertical-align: top; padding-left: 8px;">
+                        <strong style="color: #22577A; font-size: 15px;">Instant Notifications</strong>
+                        <p style="color: #666666; font-size: 14px; margin: 4px 0 0 0;">You'll receive immediate email alerts when opportunities arise.</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- CTA Buttons -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 32px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{ dashboard_url }}" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #5eb9d7 0%, #22577A 100%); color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                View Your Dashboard
+            </a>
+        </td>
+    </tr>
+</table>
+
+<!-- Info Box -->
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 24px 0;">
+    <tr>
+        <td style="background-color: #e7f5fa; border-left: 4px solid #5eb9d7; padding: 16px 20px; border-radius: 0 4px 4px 0;">
+            <p style="color: #0c5460; font-size: 14px; margin: 0;">
+                <strong>Need help?</strong> Visit our <a href="{{ base_url }}/support" style="color: #22577A; text-decoration: underline;">support center</a> or reply to this email and we'll be happy to assist.
+            </p>
+        </td>
+    </tr>
+</table>
+{% endblock %}

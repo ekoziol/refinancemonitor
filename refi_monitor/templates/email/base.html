@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+    <title>{% block title %}RefiAlert{% endblock %}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        /* Reset styles */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+
+        /* Base styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            background-color: #f4f4f4;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #22577A 0%, #5eb9d7 100%);
+            padding: 30px 40px;
+            text-align: center;
+        }
+        .email-header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .email-header .logo {
+            max-width: 180px;
+            height: auto;
+        }
+        .email-header .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* Content */
+        .email-content {
+            background-color: #ffffff;
+            padding: 40px;
+        }
+        .email-content h2 {
+            color: #22577A;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+        }
+        .email-content h3 {
+            color: #5f6988;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 25px 0 15px 0;
+        }
+        .email-content p {
+            margin: 0 0 16px 0;
+            color: #555555;
+        }
+        .email-content ul, .email-content ol {
+            margin: 0 0 16px 0;
+            padding-left: 24px;
+            color: #555555;
+        }
+        .email-content li {
+            margin-bottom: 8px;
+        }
+
+        /* Alert/Info boxes */
+        .alert-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .info-box {
+            background-color: #e7f5fa;
+            border-left: 4px solid #5eb9d7;
+            padding: 16px 20px;
+            margin: 24px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Details card */
+        .details-card {
+            background-color: #f8f9fa;
+            padding: 24px;
+            margin: 24px 0;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .details-card h3 {
+            margin-top: 0;
+            color: #22577A;
+        }
+        .details-card ul {
+            margin-bottom: 0;
+        }
+
+        /* CTA Button */
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #5eb9d7 0%, #22577A 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .cta-button:hover {
+            background: linear-gradient(135deg, #4ea9c7 0%, #1a4560 100%);
+        }
+        .cta-button-secondary {
+            background: transparent;
+            border: 2px solid #5eb9d7;
+            color: #5eb9d7 !important;
+        }
+
+        /* Divider */
+        .divider {
+            border: 0;
+            border-top: 1px solid #e9ecef;
+            margin: 32px 0;
+        }
+
+        /* Footer */
+        .email-footer {
+            background-color: #22577A;
+            padding: 32px 40px;
+            text-align: center;
+        }
+        .email-footer p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin: 0 0 12px 0;
+        }
+        .email-footer a {
+            color: #5eb9d7;
+            text-decoration: none;
+        }
+        .email-footer a:hover {
+            text-decoration: underline;
+        }
+        .social-links {
+            margin: 16px 0;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+        }
+        .unsubscribe {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .unsubscribe p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Mobile responsive */
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+            .email-header {
+                padding: 24px 20px !important;
+            }
+            .email-header h1 {
+                font-size: 24px !important;
+            }
+            .email-content {
+                padding: 24px 20px !important;
+            }
+            .email-content h2 {
+                font-size: 20px !important;
+            }
+            .email-footer {
+                padding: 24px 20px !important;
+            }
+            .details-card {
+                padding: 16px !important;
+            }
+            .cta-button {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <center style="width: 100%; background-color: #f4f4f4;">
+        <!--[if mso | IE]>
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="width:600px;">
+        <tr>
+        <td>
+        <![endif]-->
+
+        <!-- Email Container -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;" class="email-container">
+
+            <!-- Preheader (hidden preview text) -->
+            <tr>
+                <td style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+                    {% block preheader %}{% endblock %}
+                </td>
+            </tr>
+
+            <!-- Header -->
+            <tr>
+                <td class="email-header" style="background: linear-gradient(135deg, #22577A 0%, #5eb9d7 100%); padding: 30px 40px; text-align: center;">
+                    {% block header %}
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">
+                        {% block header_icon %}{% endblock %} RefiAlert
+                    </h1>
+                    <p class="tagline" style="color: rgba(255, 255, 255, 0.9); font-size: 14px; margin-top: 8px; margin-bottom: 0;">
+                        Smart Mortgage Refinancing Alerts
+                    </p>
+                    {% endblock %}
+                </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+                <td class="email-content" style="background-color: #ffffff; padding: 40px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                    {% block content %}{% endblock %}
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td class="email-footer" style="background-color: #22577A; padding: 32px 40px; text-align: center;">
+                    {% block footer %}
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 13px; margin: 0 0 12px 0;">
+                        Questions? <a href="{{ base_url }}/support" style="color: #5eb9d7; text-decoration: none;">Contact Support</a> | <a href="{{ base_url }}/dashboard" style="color: #5eb9d7; text-decoration: none;">Manage Alerts</a>
+                    </p>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 13px; margin: 0;">
+                        &copy; {{ current_year }} RefiAlert. All rights reserved.
+                    </p>
+
+                    <!-- Unsubscribe -->
+                    <div class="unsubscribe" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                        <p style="font-size: 12px; color: rgba(255, 255, 255, 0.6); margin: 0;">
+                            You're receiving this email because you signed up for RefiAlert notifications.<br>
+                            <a href="{{ unsubscribe_url }}" style="color: #5eb9d7; text-decoration: none;">Unsubscribe</a> | <a href="{{ preferences_url }}" style="color: #5eb9d7; text-decoration: none;">Email Preferences</a>
+                        </p>
+                    </div>
+                    {% endblock %}
+                </td>
+            </tr>
+
+        </table>
+
+        <!--[if mso | IE]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
+    </center>
+</body>
+</html>

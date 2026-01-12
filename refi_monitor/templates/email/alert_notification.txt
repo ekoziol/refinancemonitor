@@ -1,0 +1,57 @@
+RefiAlert Notification
+======================
+
+Great News, {{ user_name }}!
+
+Your refinancing alert has been triggered for {{ mortgage_name }}.
+
+-----------------------------------------
+ALERT DETAILS
+-----------------------------------------
+Alert Type: {{ alert_type }}
+Reason: {{ trigger_reason }}
+Date: {{ trigger_date }}
+
+-----------------------------------------
+CURRENT MORTGAGE DETAILS
+-----------------------------------------
+Remaining Principal: ${{ "{:,.2f}".format(remaining_principal) }}
+Current Interest Rate: {{ "{:.2f}".format(original_rate) }}%
+Remaining Term: {{ remaining_term }} months
+
+-----------------------------------------
+TARGET REFINANCING GOALS
+-----------------------------------------
+{% if target_monthly_payment -%}
+Target Monthly Payment: ${{ "{:,.2f}".format(target_monthly_payment) }}
+{% endif -%}
+{% if target_interest_rate -%}
+Target Interest Rate: {{ "{:.2f}".format(target_interest_rate) }}%
+{% endif -%}
+Target Term: {{ target_term }} months
+
+-----------------------------------------
+RECOMMENDED NEXT STEPS
+-----------------------------------------
+1. Review current market rates on our dashboard
+2. Calculate potential savings using our refinance calculator
+3. Contact lenders for refinancing quotes
+4. Compare closing costs vs. long-term savings
+
+View Your Dashboard: {{ dashboard_url }}
+
+-----------------------------------------
+
+This is an excellent opportunity to save money on your mortgage.
+We recommend contacting your lender or a mortgage broker to discuss
+refinancing options.
+
+---
+This alert was generated automatically by RefiAlert based on your
+alert settings. To manage your alerts or update your preferences,
+log in to your account.
+
+Unsubscribe: {{ unsubscribe_url }}
+Email Preferences: {{ preferences_url }}
+
+(c) {{ current_year }} RefiAlert. All rights reserved.
