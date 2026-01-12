@@ -1,7 +1,6 @@
 """Routes for parent Flask app."""
 import os
 from datetime import datetime, timedelta
-from sqlalchemy import text
 from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
@@ -128,24 +127,26 @@ def favicon():
 
 
 @main_bp.route('/health')
-def health():
+def health_check():
     """
     Health check endpoint for deployment platforms.
-    Returns 200 OK with basic status information.
-    Used by Railway, Heroku, and other platforms for liveness probes.
+    Returns 200 if app is healthy, 503 if database is unreachable.
     """
     try:
-        # Basic database connectivity check
-        db.session.execute(text('SELECT 1'))
-        db_status = 'healthy'
-    except Exception:
-        db_status = 'unhealthy'
-
-    return jsonify({
-        'status': 'ok',
-        'database': db_status,
-        'timestamp': datetime.utcnow().isoformat()
-    }), 200 if db_status == 'healthy' else 503
+        # Check database connectivity
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 503
 
 
 @main_bp.route('/', methods=['GET'])

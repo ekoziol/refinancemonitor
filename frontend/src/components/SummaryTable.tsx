@@ -27,13 +27,6 @@ function formatCurrency(value: number): string {
 }
 
 /**
- * Format a number as percentage (X.XX%)
- */
-function formatPercentage(value: number): string {
-  return `${value.toFixed(2)}%`;
-}
-
-/**
  * Format months as years and months
  */
 function formatMonths(months: number): string {
