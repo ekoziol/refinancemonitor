@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PaymentChart > snapshot > matches snapshot for default props 1`] = `
+<div
+  aria-label="Payment Chart showing monthly payment by interest rate"
+  class="w-full"
+  data-testid="payment-chart"
+  role="img"
+>
+  <h3
+    class="text-center font-semibold text-gray-800 mb-4"
+  >
+    Monthly Payment by Interest Rate
+  </h3>
+  <div
+    data-plot-config="{"responsive":true,"displayModeBar":true,"scrollZoom":true,"staticPlot":false,"displaylogo":false,"modeBarButtonsToRemove":["lasso2d","select2d"]}"
+    data-plot-data="[{"x":[0.01,0.02,0.03,0.04,0.05],"y":[1500,1650,1800,1950,2100],"type":"scatter","mode":"lines","name":"Original Principal","line":{"color":"#3b82f6"},"showlegend":true},{"x":[0.01,0.02,0.03,0.04,0.05],"y":[1200,1320,1440,1560,1680],"type":"scatter","mode":"lines","name":"Remaining Principal","line":{"color":"#ef4444"},"showlegend":true}]"
+    data-plot-layout="{"xaxis":{"title":{"text":"Interest Rate"},"tickformat":",.2%"},"yaxis":{"title":{"text":"Monthly Payment"},"tickformat":"$,.2f"},"legend":{"orientation":"h","yanchor":"bottom","y":-0.3,"xanchor":"left","x":0},"shapes":[{"type":"line","x0":0,"y0":2015.11,"x1":0.045,"y1":2015.11,"line":{"color":"Black","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0.045,"y0":1110,"x1":0.045,"y1":2015.11,"line":{"color":"Black","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0,"y0":1500,"x1":0.02,"y1":1500,"line":{"color":"Green","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0.02,"y0":1110,"x1":0.02,"y1":1500,"line":{"color":"Green","dash":"dash"},"xref":"x","yref":"y"}],"margin":{"t":20,"r":30,"b":80,"l":80},"autosize":true}"
+    data-testid="plotly-chart"
+    style="width: 100%; height: 400px;"
+  />
+</div>
+`;
+
+exports[`PaymentChart > snapshot > matches snapshot with different data 1`] = `
+<div
+  aria-label="Payment Chart showing monthly payment by interest rate"
+  class="w-full"
+  data-testid="payment-chart"
+  role="img"
+>
+  <h3
+    class="text-center font-semibold text-gray-800 mb-4"
+  >
+    Monthly Payment by Interest Rate
+  </h3>
+  <div
+    data-plot-config="{"responsive":true,"displayModeBar":true,"scrollZoom":true,"staticPlot":false,"displaylogo":false,"modeBarButtonsToRemove":["lasso2d","select2d"]}"
+    data-plot-data="[{"x":[0.02,0.04],"y":[1800,2200],"type":"scatter","mode":"lines","name":"Original Principal","line":{"color":"#3b82f6"},"showlegend":true},{"x":[0.02,0.04],"y":[1800,2200],"type":"scatter","mode":"lines","name":"Remaining Principal","line":{"color":"#ef4444"},"showlegend":true}]"
+    data-plot-layout="{"xaxis":{"title":{"text":"Interest Rate"},"tickformat":",.2%"},"yaxis":{"title":{"text":"Monthly Payment"},"tickformat":"$,.2f"},"legend":{"orientation":"h","yanchor":"bottom","y":-0.3,"xanchor":"left","x":0},"shapes":[{"type":"line","x0":0,"y0":2000,"x1":0.03,"y1":2000,"line":{"color":"Black","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0.03,"y0":1430,"x1":0.03,"y1":2000,"line":{"color":"Black","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0,"y0":1500,"x1":0.02,"y1":1500,"line":{"color":"Green","dash":"dash"},"xref":"x","yref":"y"},{"type":"line","x0":0.02,"y0":1430,"x1":0.02,"y1":1500,"line":{"color":"Green","dash":"dash"},"xref":"x","yref":"y"}],"margin":{"t":20,"r":30,"b":80,"l":80},"autosize":true}"
+    data-testid="plotly-chart"
+    style="width: 100%; height: 400px;"
+  />
+</div>
+`;
