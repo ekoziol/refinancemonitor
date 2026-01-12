@@ -5,6 +5,7 @@ stages:
   - review
   - test
   - build
+  - deploy
 
 # Claude Code automated code review on merge requests
 code-review:
@@ -21,3 +22,21 @@ code-review:
   allow_failure: true
   variables:
     GIT_DEPTH: 0  # Full history for diff analysis
+
+# Mirror to GitHub on main branch pushes
+mirror-to-github:
+  stage: deploy
+  image: alpine/git:latest
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0  # Full history for mirroring
+  before_script:
+    - git config --global user.email "ci@gitlab.com"
+    - git config --global user.name "GitLab CI"
+  script:
+    - git remote add github https://${GITHUB_TOKEN}@github.com/ekoziol/refinancemonitor.git || true
+    - git push github --all --force
+    - git push github --tags --force
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true
