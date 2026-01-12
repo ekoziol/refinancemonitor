@@ -1,11 +1,24 @@
 # GitLab CI/CD Pipeline for refi_alert
-# Includes automated code review with Claude Code
+# Includes automated code review, testing, and deployment
 
 stages:
   - review
   - test
   - build
   - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  POSTGRES_DB: test_db
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_password
+
+# Cache pip packages between jobs
+.python-cache: &python-cache
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
 
 # Claude Code automated code review on merge requests
 code-review:
@@ -22,6 +35,82 @@ code-review:
   allow_failure: true
   variables:
     GIT_DEPTH: 0  # Full history for diff analysis
+
+# Run Python tests
+test:
+  stage: test
+  image: python:3.9-slim
+  <<: *python-cache
+  services:
+    - postgres:13
+  variables:
+    DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    FLASK_ENV: testing
+    SECRET_KEY: test-secret-key
+  before_script:
+    - apt-get update && apt-get install -y libpq-dev gcc
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install pytest pytest-cov
+  script:
+    - flask db upgrade
+    - pytest tests/ -v --cov=refi_monitor --cov-report=term-missing
+  coverage: '/TOTAL.*\s+(\d+%)/'
+  rules:
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Build frontend assets
+build-frontend:
+  stage: build
+  image: node:18-slim
+  cache:
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run build:css
+  artifacts:
+    paths:
+      - refi_monitor/static/dist/
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Deploy to Railway staging
+deploy-staging:
+  stage: deploy
+  image: node:18-slim
+  before_script:
+    - npm install -g @railway/cli
+  script:
+    - railway link $RAILWAY_PROJECT_ID
+    - railway up --environment staging
+  environment:
+    name: staging
+    url: https://staging.refialert.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+
+# Deploy to Railway production
+deploy-production:
+  stage: deploy
+  image: node:18-slim
+  before_script:
+    - npm install -g @railway/cli
+  script:
+    - railway link $RAILWAY_PROJECT_ID
+    - railway up --environment production
+  environment:
+    name: production
+    url: https://refialert.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+  needs:
+    - deploy-staging
 
 # Mirror to GitHub on main branch pushes
 mirror-to-github:
