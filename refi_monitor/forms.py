@@ -49,7 +49,7 @@ class SignupForm(FlaskForm):
             EqualTo('password', message='Passwords must match.'),
         ],
     )
-    # recaptcha = RecaptchaField()
+    recaptcha = RecaptchaField()
     submit = SubmitField('Register')
 
 
@@ -60,7 +60,7 @@ class LoginForm(FlaskForm):
         'Email', validators=[DataRequired(), Email(message='Enter a valid email.')]
     )
     password = PasswordField('Password', validators=[DataRequired()])
-    # recaptcha = RecaptchaField()
+    recaptcha = RecaptchaField()
     submit = SubmitField('Log In')
 
 

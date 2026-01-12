@@ -29,3 +29,4 @@ Flask-Mail==0.9.1
 requests==2.26.0
 typer==0.4.0
 sentry-sdk[flask]==1.14.0
+Flask-Limiter==3.5.0
