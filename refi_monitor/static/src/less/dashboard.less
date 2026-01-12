@@ -49,3 +49,39 @@ body {
     }
   }
 }
+
+// Responsive styles for dashboard
+@media (max-width: 768px) {
+  .dashboard-template {
+    .container {
+      padding: 1rem;
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      p {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  // Ensure graphs are scrollable on mobile
+  .plotly-graph-div {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  // Stack cards vertically on small screens
+  .dashboard-card-row {
+    flex-direction: column;
+  }
+
+  // Full width cards on mobile
+  .dashboard-card {
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+}

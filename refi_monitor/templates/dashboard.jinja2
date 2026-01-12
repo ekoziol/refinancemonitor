@@ -1,157 +1,116 @@
 {% extends "main_layout.jinja2" %}
-{% from "widgets/notification_center.jinja2" import notification_center %}
 
 {% block pagecontent %}
-<b><h1 class="text-4xl text-center text-gray-800">Refinance Monitor Dashboard</h1></b>
-
-<!-- Notification Center Widget -->
-<div id="notifications" class="ml-72 mt-8 mr-8">
-    {{ notification_center(notifications, alerts_summary) }}
-</div>
-
-<table class="ml-72 mt-8">
+<div class="md:ml-72 ml-0 pt-16 md:pt-4 px-4">
+<h1 class="text-2xl md:text-4xl text-center text-gray-800 font-bold mb-6">Refinance Monitor Dashboard</h1>
 
 {% if mortgage_alerts|length < 1 %}
-<tr>
-    <td>
-        <a href="{{url_for('mortgage_bp.addmortgage')}}">
-            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                    <div class="md:p-7 p-4">
-                        <h2 class="text-xl text-center text-gray-200 capitalize">Click to Add a Mortgage</h2>
-                        <h3 class="text-sm  text-gray-400  text-center">Welcome to Refinance Monitor!</h3>
-                    </div>
-                </div>
-        </a>
-    </td>
-</tr>
+<div class="grid grid-cols-1 gap-4">
+    <a href="{{url_for('mortgage_bp.addmortgage')}}">
+        <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">Click to Add a Mortgage</h2>
+                <h3 class="text-sm text-gray-400 text-center">Welcome to Refinance Monitor!</h3>
+            </div>
+        </div>
+    </a>
+</div>
 {% else %}
-    {% for ma in mortgage_alerts %}
-    {% set m = ma[0] %}
-    {% set a = ma[1] %}
-    {% set status_graph = ma[2] %}
-    {% set time_graph = ma[3] %}
-    <tr>
-        <tr>
-            <td>
-                <table>
-    <!--                 <tr>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Mortgage Name</h3>
-                                </div>
-                        </div>
-                    </tr> -->
-                    <tr>
-     <!--                    <td><b>Remaining Principal: </b></td><td>${{ m.remaining_principal }}</td> -->
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                    <div class="md:p-7 p-4">
-                                        <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
-                                        <h3 class="text-sm  text-gray-400  text-center">Mortgage Name</h3>
-                                    </div>
-                            </div>
-                        </td>
-                        <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">{{ "${:,.0f}".format(m.remaining_principal) }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Remaining Principal</h3>
-                            </div>
-                        </div>
-                        </td>
-                        
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.remaining_term|string + " months" }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Remaining Term</h3>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-            <td>
-                <table>
-                {% if a is not none %}
+{% for ma in mortgage_alerts %}
+{% set m = ma[0] %}
+{% set a = ma[1] %}
+{% set status_graph = ma[2] %}
+{% set time_graph = ma[3] %}
+<div class="mb-6">
+    <!-- Mortgage Info Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Mortgage Name</h3>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">{{ "${:,.0f}".format(m.remaining_principal) }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Remaining Principal</h3>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.remaining_term|string + " months" }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Remaining Term</h3>
+            </div>
+        </div>
+    </div>
 
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.alert_type }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Alert Type</h3>
-                                </div>
-                            </div>
-                        </td>
-                {% if a.alert_type == "Monthly Payment" %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Target Monthly Payment</h3>
-                            </div>
-                        </div>
-                    </td>
-                {% elif a.alert_type == "Interest Rate" %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.target_interest_rate }}%</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Target Interest Rate:</h3>
-                            </div>
-                        </div>
-                    </td>
-              {% endif %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Trigger Status</h3>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Last Trigger Date</h3>
-                            </div>
-                        </div>
-                    </td>
-              {% else %}
-                    <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}">
-                    <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to set an alert</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">No Alerts Found</h3>
-                            </div>
-                        </div>
-                    </a>
+    <!-- Alert Info Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        {% if a is not none %}
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.alert_type }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Alert Type</h3>
+            </div>
+        </div>
+        {% if a.alert_type == "Monthly Payment" %}
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Target Monthly Payment</h3>
+            </div>
+        </div>
+        {% elif a.alert_type == "Interest Rate" %}
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.target_interest_rate }}%</h2>
+                <h3 class="text-sm text-gray-400 text-center">Target Interest Rate</h3>
+            </div>
+        </div>
+        {% endif %}
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Trigger Status</h3>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
+                <h3 class="text-sm text-gray-400 text-center">Last Trigger Date</h3>
+            </div>
+        </div>
+        {% else %}
+        <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}" class="col-span-1 sm:col-span-2 lg:col-span-4">
+            <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg">
+                <div class="p-4 md:p-7">
+                    <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to set an alert</h2>
+                    <h3 class="text-sm text-gray-400 text-center">No Alerts Found</h3>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+    </div>
 
-              {% endif %}
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-            {% if status_graph %}
-                {{ status_graph|safe }}
-            {% endif %}
-            </td>
-            <td>
-            {% if time_graph %}
-                {{ time_graph|safe }}
-            {% endif %}
-            </td>
-        </tr>
-    </tr>
-    <tr>
-        <td class="bg-green-600 h-0.5"></td>
-        <td class="bg-green-600 h-0.5"></td>
-    </tr>
-    {% endfor %}
-    {% endif %}
+    <!-- Graphs -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {% if status_graph %}
+        <div class="overflow-x-auto">
+            {{ status_graph|safe }}
+        </div>
+        {% endif %}
+        {% if time_graph %}
+        <div class="overflow-x-auto">
+            {{ time_graph|safe }}
+        </div>
+        {% endif %}
+    </div>
 
-    </table>
+    <!-- Separator -->
+    <div class="h-0.5 bg-green-600 mt-4 rounded"></div>
+</div>
+{% endfor %}
+{% endif %}
+
+</div>
 {% endblock %}
