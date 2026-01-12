@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     password = db.Column(
         db.String(200), primary_key=False, unique=False, nullable=False
     )
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     credit_score = db.Column(db.Integer, index=False, unique=False, nullable=True)
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
@@ -22,8 +23,8 @@ class User(UserMixin, db.Model):
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):
-        """Create hashed password."""
-        self.password = generate_password_hash(password, method='sha256')
+        """Create hashed password using scrypt (secure default)."""
+        self.password = generate_password_hash(password, method='scrypt')
 
     def check_password(self, password):
         """Check hashed password."""

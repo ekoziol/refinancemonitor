@@ -1,10 +1,18 @@
 """Routes for user authentication."""
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user
+from urllib.parse import urlparse, urljoin
 
 from . import login_manager
 from .forms import LoginForm, SignupForm
 from .models import User, db
+
+
+def is_safe_url(target):
+    """Validate that redirect target is safe (same host only)."""
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 # Blueprint Configuration
 auth_bp = Blueprint(
@@ -59,6 +67,8 @@ def login():
         if user and user.check_password(password=form.password.data):
             login_user(user)
             next_page = request.args.get('next')
+            if next_page and not is_safe_url(next_page):
+                next_page = None
             return redirect(next_page or url_for('main_bp.dashboard'))
         flash('Invalid username/password combination')
         return redirect(url_for('auth_bp.login'))

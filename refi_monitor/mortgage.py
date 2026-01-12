@@ -263,13 +263,15 @@ def cancel():
 @login_required
 def create_checkout_session():
     try:
+        # Use environment variable for base URL, fallback to request host
+        base_url = os.getenv('APP_BASE_URL', request.host_url.rstrip('/'))
 
         checkout_session = stripe.checkout.Session.create(
             line_items=[{'price': 'price_1JTUalFikv2vmX3N8ktXSifY', 'quantity': 1}],
             payment_method_types=['card'],
             mode='subscription',
-            success_url='http://localhost:5000/success',
-            cancel_url='http://localhost:5000/cancel',
+            success_url=f'{base_url}/success',
+            cancel_url=f'{base_url}/cancel',
             subscription_data={
                 'metadata': {
                     'alert_id': session['alert_id'],
@@ -280,8 +282,9 @@ def create_checkout_session():
         )
 
     except Exception as e:
-
-        return str(e)
+        # Log error but don't expose details to user
+        print(f"Checkout session error: {e}")
+        return jsonify({'error': 'Unable to create checkout session'}), 500
 
     return redirect(checkout_session.url, code=303)
 
@@ -291,23 +294,25 @@ def create_checkout_session():
 def alert_payment_webhook():
     webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
-    request_data = json.loads(request.data)
+    if not webhook_secret:
+        # Security: Require webhook secret in production
+        return jsonify({'error': 'Webhook secret not configured'}), 500
 
-    if webhook_secret:
-        # Retrieve the event by verifying the signature using the raw body and secret if webhook signing is configured.
-        signature = request.headers.get('stripe-signature')
-        try:
-            event = stripe.Webhook.construct_event(
-                payload=request.data, sig_header=signature, secret=webhook_secret
-            )
-            data = event['data']
-        except Exception as e:
-            return e
-        # Get the type of webhook event sent - used to check the status of PaymentIntents.
-        event_type = event['type']
-    else:
-        data = request_data['data']
-        event_type = request_data['type']
+    signature = request.headers.get('stripe-signature')
+    if not signature:
+        return jsonify({'error': 'Missing stripe-signature header'}), 400
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload=request.data, sig_header=signature, secret=webhook_secret
+        )
+    except stripe.error.SignatureVerificationError:
+        return jsonify({'error': 'Invalid signature'}), 400
+    except Exception as e:
+        return jsonify({'error': 'Webhook processing error'}), 400
+
+    data = event['data']
+    event_type = event['type']
     data_object = data['object']
 
     if event_type == 'checkout.session.completed':
