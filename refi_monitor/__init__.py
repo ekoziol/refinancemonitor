@@ -18,10 +18,10 @@ mail = Mail()
 limiter = Limiter(key_func=get_remote_address)
 
 
-def init_sentry(app):
+def init_sentry():
     """Initialize Sentry for error tracking in production."""
-    sentry_dsn = app.config.get('SENTRY_DSN')
-    if sentry_dsn:
+    sentry_dsn = os.environ.get('SENTRY_DSN')
+    if sentry_dsn and os.environ.get('FLASK_ENV') == 'production':
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
         from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -32,19 +32,19 @@ def init_sentry(app):
                 FlaskIntegration(),
                 SqlalchemyIntegration(),
             ],
-            environment=app.config.get('SENTRY_ENVIRONMENT', 'development'),
-            traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
-            send_default_pii=False,  # Don't send personally identifiable information
+            traces_sample_rate=0.1,
+            profiles_sample_rate=0.1,
+            environment=os.environ.get('FLASK_ENV', 'development'),
         )
 
 
 def init_app():
     """Construct core Flask application."""
+    # Initialize Sentry before creating the app
+    init_sentry()
+
     app = Flask(__name__, instance_relative_config=False)
     app.config.from_object('config.Config')
-
-    # Initialize Sentry before other extensions
-    init_sentry(app)
     assets = Environment()
     assets.init_app(app)
 
