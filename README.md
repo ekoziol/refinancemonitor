@@ -2,6 +2,14 @@
 
 A Flask-based web application that monitors mortgage rates and automatically notifies users when favorable refinancing conditions are met.
 
+## Repository Mirror
+
+This repository is a read-only mirror of the primary GitLab repository.
+
+**Primary Repository:** https://gitlab.com/ekoziol/refi-alert
+
+Please submit issues and merge requests to the GitLab repository.
+
 ## Features
 
 - **Mortgage Tracking**: Users can add and manage multiple mortgages with detailed information
