@@ -1,0 +1,42 @@
+RefiAlert Payment Confirmation
+===============================
+
+Payment Confirmed!
+
+Thank you for your payment!
+Your RefiAlert subscription is now {{ payment_status }}.
+
+-----------------------------------------
+SUBSCRIPTION DETAILS
+-----------------------------------------
+Alert ID: #{{ alert_id }}
+Status: {{ payment_status | title }}
+Date: {{ payment_date }}
+
+-----------------------------------------
+WHAT HAPPENS NEXT?
+-----------------------------------------
+Your alert is now active and we'll monitor mortgage rates for you.
+You'll receive email notifications when your refinancing conditions
+are met.
+
+[✓] Continuous Market Monitoring
+    We'll track mortgage rates 24/7 and compare them to your targets.
+
+[✓] Real-Time Alert Evaluation
+    Your alert will be evaluated against current market conditions daily.
+
+[✓] Instant Notifications
+    You'll receive immediate email alerts when opportunities arise.
+
+View Your Dashboard: {{ dashboard_url }}
+
+-----------------------------------------
+
+Need help? Contact us at {{ base_url }}/support or reply to this email.
+
+---
+Unsubscribe: {{ unsubscribe_url }}
+Email Preferences: {{ preferences_url }}
+
+(c) {{ current_year }} RefiAlert. All rights reserved.
