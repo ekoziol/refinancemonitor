@@ -1,0 +1,283 @@
+{% extends "dashboard_layout_v2.jinja2" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<!-- Dashboard Header -->
+<header class="dashboard-header">
+    <div class="header-content">
+        <h1 class="page-title">Welcome back, {{ current_user.name }}</h1>
+        <p class="page-subtitle">Monitor your mortgage rates and potential savings</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('mortgage_bp.addmortgage') }}" class="btn btn-primary">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Mortgage
+        </a>
+    </div>
+</header>
+
+<!-- Quick Stats Row -->
+<section class="dashboard-section">
+    <div class="stats-grid">
+        <!-- Current Rate Card -->
+        <div class="stat-card stat-card--primary">
+            <div class="stat-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Current Market Rate</span>
+                <span class="stat-value" id="current-rate">--</span>
+                <span class="stat-change stat-change--positive" id="rate-change">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Total Mortgages Card -->
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--secondary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Active Mortgages</span>
+                <span class="stat-value">{{ mortgage_alerts|length }}</span>
+                <span class="stat-meta">Tracked properties</span>
+            </div>
+        </div>
+
+        <!-- Active Alerts Card -->
+        <div class="stat-card">
+            <div class="stat-icon stat-icon--accent">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Active Alerts</span>
+                <span class="stat-value">{{ alerts|length if alerts else 0 }}</span>
+                <span class="stat-meta">Monitoring targets</span>
+            </div>
+        </div>
+
+        <!-- Potential Savings Card -->
+        <div class="stat-card stat-card--highlight">
+            <div class="stat-icon stat-icon--success">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Est. Monthly Savings</span>
+                <span class="stat-value" id="potential-savings">--</span>
+                <span class="stat-meta">If you refinance today</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Dashboard Grid -->
+<div class="dashboard-grid">
+    <!-- Mortgage Overview Section -->
+    <section class="dashboard-section dashboard-section--full">
+        <div class="section-header">
+            <h2 class="section-title">Your Mortgages</h2>
+            <a href="{{ url_for('main_bp.manage') }}" class="section-link">Manage All</a>
+        </div>
+
+        {% if mortgage_alerts|length < 1 %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+            </div>
+            <h3 class="empty-state-title">No mortgages yet</h3>
+            <p class="empty-state-text">Add your first mortgage to start tracking rates and potential savings.</p>
+            <a href="{{ url_for('mortgage_bp.addmortgage') }}" class="btn btn-primary">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Your First Mortgage
+            </a>
+        </div>
+        {% else %}
+        <!-- Mortgage Cards Grid -->
+        <div class="mortgage-grid">
+            {% for ma in mortgage_alerts %}
+            {% set m = ma[0] %}
+            {% set a = ma[1] %}
+            {% set status_graph = ma[2] %}
+            {% set time_graph = ma[3] %}
+
+            <article class="mortgage-card" data-mortgage-id="{{ m.id }}">
+                <div class="mortgage-card-header">
+                    <h3 class="mortgage-name">{{ m.name }}</h3>
+                    {% if a %}
+                    <span class="badge badge--active">
+                        <span class="badge-dot"></span>
+                        Alert Active
+                    </span>
+                    {% else %}
+                    <span class="badge badge--inactive">No Alert</span>
+                    {% endif %}
+                </div>
+
+                <div class="mortgage-card-body">
+                    <!-- Key Metrics -->
+                    <div class="metric-row">
+                        <div class="metric">
+                            <span class="metric-label">Remaining Principal</span>
+                            <span class="metric-value">${{ "{:,.0f}".format(m.remaining_principal) }}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Current Rate</span>
+                            <span class="metric-value">{{ "%.2f"|format(m.original_interest_rate) }}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Remaining Term</span>
+                            <span class="metric-value">{{ m.remaining_term }} mo</span>
+                        </div>
+                    </div>
+
+                    {% if a %}
+                    <!-- Alert Info -->
+                    <div class="alert-summary">
+                        <div class="alert-summary-item">
+                            <span class="alert-summary-label">Alert Type</span>
+                            <span class="alert-summary-value">{{ a.alert_type }}</span>
+                        </div>
+                        {% if a.alert_type == "Monthly Payment" %}
+                        <div class="alert-summary-item">
+                            <span class="alert-summary-label">Target Payment</span>
+                            <span class="alert-summary-value">${{ "{:,.0f}".format(a.target_monthly_payment) }}</span>
+                        </div>
+                        {% elif a.alert_type == "Interest Rate" %}
+                        <div class="alert-summary-item">
+                            <span class="alert-summary-label">Target Rate</span>
+                            <span class="alert-summary-value">{{ a.target_interest_rate }}%</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mortgage-card-footer">
+                    {% if a %}
+                    <a href="{{ url_for('mortgage_bp.addalert', m_id=m.id) }}" class="btn btn-outline btn-sm">Edit Alert</a>
+                    {% else %}
+                    <a href="{{ url_for('mortgage_bp.addalert', m_id=m.id) }}" class="btn btn-primary btn-sm">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Set Alert
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('/calculator/') }}" target="_blank" class="btn btn-ghost btn-sm">Calculator</a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Rate History Chart Section -->
+    <section class="dashboard-section dashboard-section--chart" id="rate-history-section">
+        <div class="section-header">
+            <h2 class="section-title">Rate History</h2>
+            <div class="section-controls">
+                <select class="select-control" id="rate-term-select">
+                    <option value="360">30-Year Fixed</option>
+                    <option value="180">15-Year Fixed</option>
+                </select>
+            </div>
+        </div>
+        <div class="chart-container" id="rate-history-chart">
+            <!-- Chart will be rendered here by ra-li6 -->
+            <div class="chart-placeholder">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                </svg>
+                <p>Rate history chart</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Savings Projection Section -->
+    <section class="dashboard-section dashboard-section--savings" id="savings-section">
+        <div class="section-header">
+            <h2 class="section-title">Savings Projection</h2>
+        </div>
+        <div class="savings-container" id="savings-projection">
+            <!-- Savings visualization will be rendered here by ra-0a0 -->
+            <div class="chart-placeholder">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p>Savings projection card</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notifications Section -->
+    <section class="dashboard-section dashboard-section--notifications" id="notifications-section">
+        <div class="section-header">
+            <h2 class="section-title">Recent Alerts</h2>
+            <a href="#" class="section-link">View All</a>
+        </div>
+        <div class="notifications-container" id="notification-center">
+            <!-- Notifications will be rendered here by ra-xtg -->
+            <div class="notification-placeholder">
+                <div class="notification-item notification-item--placeholder">
+                    <div class="notification-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    <div class="notification-content">
+                        <p class="notification-text">Alert notifications will appear here</p>
+                        <span class="notification-time">When rates hit your targets</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Legacy Graph Support (for existing graphs) -->
+{% if mortgage_alerts|length > 0 %}
+<section class="dashboard-section dashboard-section--legacy" id="legacy-graphs">
+    <div class="section-header">
+        <h2 class="section-title">Detailed Analysis</h2>
+    </div>
+    <div class="legacy-graphs-grid">
+        {% for ma in mortgage_alerts %}
+        {% set m = ma[0] %}
+        {% set status_graph = ma[2] %}
+        {% set time_graph = ma[3] %}
+        {% if status_graph or time_graph %}
+        <div class="legacy-graph-pair" data-mortgage="{{ m.name }}">
+            {% if status_graph %}
+            <div class="legacy-graph">
+                <h4 class="legacy-graph-title">{{ m.name }} - Status</h4>
+                {{ status_graph|safe }}
+            </div>
+            {% endif %}
+            {% if time_graph %}
+            <div class="legacy-graph">
+                <h4 class="legacy-graph-title">{{ m.name }} - Timeline</h4>
+                {{ time_graph|safe }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
