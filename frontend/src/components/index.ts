@@ -4,3 +4,5 @@ export { RefinanceInputs } from './RefinanceInputs';
 export { InputForm } from './InputForm';
 export { EfficientFrontierChart } from './Charts';
 export type { EfficientFrontierData, EfficientFrontierChartProps } from './Charts';
+export { SummaryTable } from './SummaryTable';
+export type { SummaryData, SummaryTableProps } from './SummaryTable';
