@@ -1,4 +1,5 @@
 """Initialize Flask app."""
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -14,10 +15,33 @@ csrf = CSRFProtect()
 mail = Mail()
 
 
+def init_sentry(app):
+    """Initialize Sentry for error tracking in production."""
+    sentry_dsn = app.config.get('SENTRY_DSN')
+    if sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[
+                FlaskIntegration(),
+                SqlalchemyIntegration(),
+            ],
+            environment=app.config.get('SENTRY_ENVIRONMENT', 'development'),
+            traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+            send_default_pii=False,  # Don't send personally identifiable information
+        )
+
+
 def init_app():
     """Construct core Flask application."""
     app = Flask(__name__, instance_relative_config=False)
     app.config.from_object('config.Config')
+
+    # Initialize Sentry before other extensions
+    init_sentry(app)
     assets = Environment()
     assets.init_app(app)
 
