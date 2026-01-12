@@ -6,7 +6,7 @@ import csv
 import io
 
 from ..models import MortgageRate
-from .. import db
+from .. import db, limiter
 
 
 rates_bp = Blueprint('rates_bp', __name__, url_prefix='/api/rates')
@@ -29,6 +29,7 @@ def get_term_months(rate_type):
 
 
 @rates_bp.route('/current', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_current_rates():
     """
     GET /api/rates/current
@@ -82,6 +83,7 @@ def get_current_rates():
 
 
 @rates_bp.route('/history', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_rate_history():
     """
     GET /api/rates/history
@@ -169,6 +171,7 @@ def get_rate_history():
 
 
 @rates_bp.route('/trend', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_rate_trend():
     """
     GET /api/rates/trend
@@ -287,6 +290,7 @@ def get_rate_trend():
 
 
 @rates_bp.route('/export', methods=['GET'])
+@limiter.limit("10 per minute")
 def export_rates_csv():
     """
     GET /api/rates/export
@@ -343,6 +347,7 @@ def export_rates_csv():
 
 
 @rates_bp.route('/types', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_rate_types():
     """
     GET /api/rates/types
