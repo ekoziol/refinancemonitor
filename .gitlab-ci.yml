@@ -1,0 +1,23 @@
+# GitLab CI/CD Pipeline for refi_alert
+# Includes automated code review with Claude Code
+
+stages:
+  - review
+  - test
+  - build
+
+# Claude Code automated code review on merge requests
+code-review:
+  stage: review
+  image: node:20-slim
+  before_script:
+    - npm install -g @anthropic-ai/claude-code
+    - apt-get update && apt-get install -y git curl jq
+  script:
+    - chmod +x ./scripts/code-review.sh
+    - ./scripts/code-review.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  allow_failure: true
+  variables:
+    GIT_DEPTH: 0  # Full history for diff analysis
