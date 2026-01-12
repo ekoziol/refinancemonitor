@@ -1,140 +1,146 @@
 {% extends "main_layout.jinja2" %}
 
 {% block pagecontent %}
-<b><h1 class="text-4xl text-center text-gray-800">Manage Mortgages and Alerts</h1></b>
-
-<table class="ml-72 mt-16">
+<div class="md:ml-72 ml-0 pt-16 md:pt-4 px-4">
+<h1 class="text-2xl md:text-4xl text-center text-gray-800 font-bold mb-6">Manage Mortgages and Alerts</h1>
 
 {% for ma in mortgage_alerts %}
-    {% set m = ma[0] %}
-    {% set a = ma[1] %}
-    {% set status_graph = ma[2] %}
-    {% set time_graph = ma[3] %}
+{% set m = ma[0] %}
+{% set a = ma[1] %}
+{% set status_graph = ma[2] %}
+{% set time_graph = ma[3] %}
 
-    <tr>
-        <td>
-        <div class="bg-gradient-to-r flex-auto w-42 h-42 from-gray-800 to-gray-700 shadow-lg rounded-lg">
-        <div class="md:p-7 p-4">
-        <table >
-          <tr class="text-md">
-            <td class="text-gray-400"><b>Mortgage Name: </b></td><td class="text-gray-200">{{ m.name }}</td>
-          </tr>
-
-          <tr class="">
-            <td class="text-gray-400"><b>Original Principal:  </b></td><td class="text-gray-200">{{ "${:,.0f}".format(m.original_principal) }}</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Original Interest Rate: </b></td><td class="text-gray-200">{{ m.original_interest_rate*100 }}%</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Original Term: </b></td><td class="text-gray-200">{{ m.original_term }}</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Remaining Principal: </b></td><td class="text-gray-200">{{ "${:,.0f}".format(m.remaining_principal) }}</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Remaining Term: </b></td><td class="text-gray-200">{{ m.remaining_term }}</td>
-          </tr>
-          
-        </table>
-        <br/>
-        <a href="{{url_for('mortgage_bp.editmortgage', m_id=m.id)}}" class="float-right text-green-600">Modify</a>
+<div class="mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <!-- Mortgage Details Card -->
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Mortgage Name:</span>
+                        <span class="text-gray-200">{{ m.name }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Original Principal:</span>
+                        <span class="text-gray-200">{{ "${:,.0f}".format(m.original_principal) }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Original Interest Rate:</span>
+                        <span class="text-gray-200">{{ m.original_interest_rate*100 }}%</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Original Term:</span>
+                        <span class="text-gray-200">{{ m.original_term }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Remaining Principal:</span>
+                        <span class="text-gray-200">{{ "${:,.0f}".format(m.remaining_principal) }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Remaining Term:</span>
+                        <span class="text-gray-200">{{ m.remaining_term }}</span>
+                    </div>
+                </div>
+                <div class="mt-4 text-right">
+                    <a href="{{url_for('mortgage_bp.editmortgage', m_id=m.id)}}" class="text-green-500 hover:text-green-400">Modify</a>
+                </div>
+            </div>
         </div>
-        </div>
-        </td>
-
 
         {% if a is not none %}
-        <td class="">
-          <div class="bg-gradient-to-r flex-auto w-42 h-42 from-gray-800 to-gray-700 shadow-lg rounded-lg">
-            <div class="md:p-7 p-4">
-          <table class="">
-          <tr>{{a}}</tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Alert Type: </b></td><td class="text-gray-200">{{ a.alert_type }}</td>
-          </tr>
-          {% if a.alert_type == "Monthly Payment" %}
-          <tr class="">
-            <td class="text-gray-400"><b>Target Monthly Payment: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-          </tr>
-          {% elif a.alert_type == "Interest Rate" -%}
-          <tr class="">
-            <td class="text-gray-400"><b>Target Interest Rate:  </b></td><td class="text-gray-200">{{ a.target_interest_rate }}%</td>
-            }
-          </tr>
-          {% endif %}
-          <tr class="">
-            <td class="text-gray-400"><b>Target Term: </b></td><td class="text-gray-200">{{ a.target_term }} years</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Estimate Refinance Cost: </b></td><td class="text-gray-200">${{ a.estimate_refinance_cost }}</td>
-          </tr>
-          <tr class="">
-            <td class="text-gray-400"><b>Payment Status: </b></td><td class="text-gray-200">{{ a.payment_status }}</td>
-          </tr>
-        </table>
-        <a href="{{url_for('mortgage_bp.editalert', alert_id=a.id)}}" class="float-right text-green-600">Modify</a>
-        </div>
-        </div>
-        </td>
-
-        <td class="">
-          <div class="bg-gradient-to-r flex-auto w-42 h-42 from-gray-800 to-gray-700 shadow-lg rounded-lg">
-            <div class="md:p-7 p-4">
-          <table class="">
-            <tr class="">
-              <td class="text-gray-400"><b>Trigger Status: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-            </tr>
-
-            <tr class="">
-              <td class="text-gray-400"><b>Last Trigger Date: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-            </tr>
-
-            <tr class="">
-              <td class="text-gray-400"><b>Estimated Trigger Interest Rate: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-            </tr> 
-
-            <tr class="inforow triggerinforow">
-              <td class="text-gray-400"><b>Estimated Refi Monthly Payment if done now: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-            </tr> 
-
-            <tr class="">
-              <td class="text-gray-400"><b>Estimated Current Principal Remaining: </b></td><td class="text-gray-200">${{ a.target_monthly_payment }}</td>
-            </tr> 
-          </table>
-          </div>
-        </div>
-        </td>
-
-        {% else %}
-        <td class="alerttable addalertsection">
-          <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}">
-            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                    <div class="md:p-7 p-4">
-                        <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to set an alert</h2>
-                        <h3 class="text-sm  text-gray-400  text-center">No Alerts Found</h3>
+        <!-- Alert Details Card -->
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Alert Type:</span>
+                        <span class="text-gray-200">{{ a.alert_type }}</span>
+                    </div>
+                    {% if a.alert_type == "Monthly Payment" %}
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Target Monthly Payment:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                    {% elif a.alert_type == "Interest Rate" %}
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Target Interest Rate:</span>
+                        <span class="text-gray-200">{{ a.target_interest_rate }}%</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Target Term:</span>
+                        <span class="text-gray-200">{{ a.target_term }} years</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Estimate Refinance Cost:</span>
+                        <span class="text-gray-200">${{ a.estimate_refinance_cost }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Payment Status:</span>
+                        <span class="text-gray-200">{{ a.payment_status }}</span>
                     </div>
                 </div>
-            </a>
-        </td>
-    {% endif %}   
-    </tr>
+                <div class="mt-4 text-right">
+                    <a href="{{url_for('mortgage_bp.editalert', alert_id=a.id)}}" class="text-green-500 hover:text-green-400">Modify</a>
+                </div>
+            </div>
+        </div>
 
+        <!-- Trigger Details Card -->
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Trigger Status:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Last Trigger Date:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Est. Trigger Interest Rate:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Est. Refi Monthly Payment:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                    <div class="flex flex-wrap justify-between">
+                        <span class="text-gray-400 font-bold">Est. Current Principal:</span>
+                        <span class="text-gray-200">${{ a.target_monthly_payment }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Add Alert Card -->
+        <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}" class="lg:col-span-2">
+            <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg h-full">
+                <div class="p-4 md:p-7 flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <h2 class="text-xl text-gray-200 capitalize">+ Click to set an alert</h2>
+                        <h3 class="text-sm text-gray-400">No Alerts Found</h3>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+</div>
 {% endfor %}
 
+<!-- Add Mortgage Card -->
+<div class="mt-6">
+    <a href="{{url_for('mortgage_bp.addmortgage')}}">
+        <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg">
+            <div class="p-4 md:p-7">
+                <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to Add a Mortgage</h2>
+                <h3 class="text-sm text-gray-400 text-center">Setup a Mortgage to Monitor Rates</h3>
+            </div>
+        </div>
+    </a>
+</div>
 
-<tr>
-    <td>
-        <a href="{{url_for('mortgage_bp.addmortgage')}}">
-            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                    <div class="md:p-7 p-4">
-                        <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to Add a Mortgage</h2>
-                        <h3 class="text-sm  text-gray-400  text-center">Setup a Mortgage to Monitor Rates</h3>
-                    </div>
-                </div>
-        </a>
-    </td>
-</tr>
-
-</table>
+</div>
 {% endblock %}
