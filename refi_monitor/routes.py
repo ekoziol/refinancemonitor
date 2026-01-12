@@ -1,7 +1,8 @@
 """Routes for parent Flask app."""
 import os
+from functools import wraps
 from datetime import datetime, timedelta
-from flask import render_template, jsonify
+from flask import render_template, jsonify, abort
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
@@ -11,6 +12,16 @@ from .plots import *
 from .scheduler import trigger_manual_check
 from . import db
 from sqlalchemy import func
+
+
+def admin_required(f):
+    """Decorator that requires the user to be an admin."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_mortgage_overview(user_id):
@@ -264,13 +275,13 @@ def logout():
 
 @main_bp.route("/admin/trigger-alerts", methods=['POST'])
 @login_required
+@admin_required
 def admin_trigger_alerts():
     """
     Admin endpoint to manually trigger alert checks.
     Useful for testing and on-demand alert evaluation.
+    Requires admin role.
     """
-    # TODO: Add proper admin role checking
-    # For now, any logged-in user can trigger (should be restricted in production)
     try:
         result = trigger_manual_check()
         return jsonify({'status': 'success', 'message': result}), 200
