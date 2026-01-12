@@ -126,6 +126,29 @@ def favicon():
     )
 
 
+@main_bp.route('/health')
+def health_check():
+    """
+    Health check endpoint for deployment platforms.
+    Returns 200 if app is healthy, 503 if database is unreachable.
+    """
+    try:
+        # Check database connectivity
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 503
+
+
 @main_bp.route('/', methods=['GET'])
 @login_required
 def dashboard():
