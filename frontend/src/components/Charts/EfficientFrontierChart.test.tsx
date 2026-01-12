@@ -9,7 +9,7 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
-global.ResizeObserver = ResizeObserverMock;
+(globalThis as typeof globalThis & { ResizeObserver: typeof ResizeObserverMock }).ResizeObserver = ResizeObserverMock;
 
 // Mock ResponsiveContainer to render children with actual dimensions
 // This is necessary because jsdom doesn't provide actual layout dimensions
