@@ -1,6 +1,7 @@
 """Routes for parent Flask app."""
 import os
 from datetime import datetime, timedelta
+from sqlalchemy import text
 from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
@@ -124,6 +125,27 @@ def favicon():
         'favicon.ico',
         mimetype='image/vnd.microsoft.icon',
     )
+
+
+@main_bp.route('/health')
+def health():
+    """
+    Health check endpoint for deployment platforms.
+    Returns 200 OK with basic status information.
+    Used by Railway, Heroku, and other platforms for liveness probes.
+    """
+    try:
+        # Basic database connectivity check
+        db.session.execute(text('SELECT 1'))
+        db_status = 'healthy'
+    except Exception:
+        db_status = 'unhealthy'
+
+    return jsonify({
+        'status': 'ok',
+        'database': db_status,
+        'timestamp': datetime.utcnow().isoformat()
+    }), 200 if db_status == 'healthy' else 503
 
 
 @main_bp.route('/', methods=['GET'])

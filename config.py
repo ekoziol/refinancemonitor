@@ -46,6 +46,10 @@ class Config:
     MAIL_PASSWORD = environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = environ.get("MAIL_DEFAULT_SENDER", "noreply@refialert.com")
 
+    # Sentry Configuration (for production error tracking)
+    SENTRY_DSN = environ.get("SENTRY_DSN")
+    SENTRY_ENVIRONMENT = environ.get("SENTRY_ENVIRONMENT", "development")
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'
