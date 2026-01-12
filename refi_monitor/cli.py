@@ -91,3 +91,33 @@ def register_commands(app):
             click.echo(f"  Next run: {job['next_run']}")
             click.echo(f"  Trigger: {job['trigger']}")
             click.echo()
+
+    @app.cli.command('check-alerts')
+    @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
+    def check_alerts_command(verbose):
+        """
+        Check all active alerts and trigger notifications if conditions are met.
+
+        This command is designed to be run by Heroku Scheduler or cron jobs.
+        It evaluates all active paid alerts against current market rates.
+
+        Usage:
+            flask check-alerts
+            flask check-alerts --verbose
+        """
+        if verbose:
+            logging.basicConfig(level=logging.DEBUG)
+        else:
+            logging.basicConfig(level=logging.INFO)
+
+        click.echo("🔔 Checking alerts...")
+
+        try:
+            from .scheduler import check_and_trigger_alerts
+            check_and_trigger_alerts()
+            click.echo("✅ Alert check completed successfully")
+
+        except Exception as e:
+            click.echo(f"❌ Error checking alerts: {e}", err=True)
+            logger.exception("Alert check failed")
+            raise click.Abort()
