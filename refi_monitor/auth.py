@@ -3,7 +3,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user
 from urllib.parse import urlparse, urljoin
 
-from . import login_manager
+from . import login_manager, limiter
 from .forms import LoginForm, SignupForm
 from .models import User, db
 
@@ -21,6 +21,7 @@ auth_bp = Blueprint(
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def signup():
     """
     User sign-up page.
@@ -49,6 +50,7 @@ def signup():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per 15 minutes")
 def login():
     """
     Log-in page for registered users.

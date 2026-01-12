@@ -50,6 +50,15 @@ class Config:
     SENTRY_DSN = environ.get("SENTRY_DSN")
     SENTRY_ENVIRONMENT = environ.get("SENTRY_ENVIRONMENT", "development")
 
+    # reCAPTCHA Configuration (Google reCAPTCHA v3)
+    RECAPTCHA_PUBLIC_KEY = environ.get("RECAPTCHA_PUBLIC_KEY")
+    RECAPTCHA_PRIVATE_KEY = environ.get("RECAPTCHA_PRIVATE_KEY")
+
+    # Rate Limiting Configuration
+    RATELIMIT_STORAGE_URI = environ.get("RATELIMIT_STORAGE_URI", "memory://")
+    RATELIMIT_STRATEGY = "fixed-window"
+    RATELIMIT_DEFAULT = "200 per day, 50 per hour"
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'

@@ -7,12 +7,15 @@ from flask_migrate import Migrate
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 mail = Mail()
+limiter = Limiter(key_func=get_remote_address)
 
 
 def init_sentry(app):
@@ -50,6 +53,7 @@ def init_app():
     login_manager.init_app(app)
     csrf.init_app(app)
     mail.init_app(app)
+    limiter.init_app(app)
 
     with app.app_context():
         # Import parts of our core Flask app
