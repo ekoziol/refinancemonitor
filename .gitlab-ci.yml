@@ -52,8 +52,8 @@ test:
     - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install pytest pytest-cov
+  # Note: flask db upgrade is skipped - db.create_all() in init_app() creates all tables
   script:
-    - flask db upgrade
     - pytest tests/ -v --cov=refi_monitor --cov-report=term-missing
   coverage: '/TOTAL.*\s+(\d+%)/'
   rules:

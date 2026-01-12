@@ -107,7 +107,7 @@ def init_rate_history_dashboard(server):
                                                 {'label': ' 10-Year Fixed', 'value': '10-year-fixed'},
                                             ],
                                             value=['30-year-fixed', '15-year-fixed'],
-                                            inline=True,
+                                            labelStyle={'display': 'inline-block', 'margin-right': '15px'},
                                             className='rate-type-checklist',
                                         ),
                                     ]
