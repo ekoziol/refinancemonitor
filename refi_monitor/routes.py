@@ -5,9 +5,93 @@ from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert
+from .models import Mortgage, Alert, Trigger
 from .plots import *
 from .scheduler import trigger_manual_check
+
+
+def get_user_notifications(user_id, limit=10):
+    """
+    Fetch recent notifications/triggers for a user.
+
+    Args:
+        user_id: The user's ID
+        limit: Maximum number of notifications to return
+
+    Returns:
+        List of notification dictionaries
+    """
+    # Get user's mortgages and alerts
+    mortgages = Mortgage.query.filter_by(user_id=user_id).all()
+    mortgage_ids = [m.id for m in mortgages]
+
+    if not mortgage_ids:
+        return []
+
+    # Get alerts for these mortgages
+    alerts = Alert.query.filter(Alert.mortgage_id.in_(mortgage_ids)).all()
+    alert_ids = [a.id for a in alerts]
+
+    if not alert_ids:
+        return []
+
+    # Get triggers (notifications) for these alerts
+    triggers = Trigger.query.filter(
+        Trigger.alert_id.in_(alert_ids)
+    ).order_by(Trigger.created_on.desc()).limit(limit).all()
+
+    notifications = []
+    for trigger in triggers:
+        alert = Alert.query.get(trigger.alert_id)
+        mortgage = Mortgage.query.get(alert.mortgage_id) if alert else None
+
+        notifications.append({
+            'type': 'trigger',
+            'title': f'Alert Triggered: {mortgage.name if mortgage else "Unknown"}',
+            'message': trigger.alert_trigger_reason,
+            'date': trigger.alert_trigger_date.strftime('%b %d, %Y at %I:%M %p') if trigger.alert_trigger_date else 'N/A',
+            'is_new': trigger.alert_trigger_status == 1,  # Assuming 1 = new/unread
+            'trigger_id': trigger.id,
+            'alert_id': trigger.alert_id
+        })
+
+    return notifications
+
+
+def get_alerts_summary(user_id):
+    """
+    Get summary counts of user's alerts.
+
+    Args:
+        user_id: The user's ID
+
+    Returns:
+        Dictionary with active, triggered, and inactive counts
+    """
+    mortgages = Mortgage.query.filter_by(user_id=user_id).all()
+    mortgage_ids = [m.id for m in mortgages]
+
+    if not mortgage_ids:
+        return {'active': 0, 'triggered': 0, 'inactive': 0}
+
+    alerts = Alert.query.filter(Alert.mortgage_id.in_(mortgage_ids)).all()
+
+    active = 0
+    triggered = 0
+    inactive = 0
+
+    for alert in alerts:
+        if alert.payment_status == 'active':
+            # Check if this alert has been triggered
+            trigger_count = Trigger.query.filter_by(alert_id=alert.id).count()
+            if trigger_count > 0:
+                triggered += 1
+            else:
+                active += 1
+        else:
+            inactive += 1
+
+    return {'active': active, 'triggered': triggered, 'inactive': inactive}
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -70,6 +154,10 @@ def dashboard():
         if matched == 0:
             mortgage_alerts.append([m, None, None, None])
 
+    # Get notification center data
+    notifications = get_user_notifications(current_user.id)
+    alerts_summary = get_alerts_summary(current_user.id)
+
     return render_template(
         'dashboard.jinja2',
         title='Refinance Monitor Dashboard',
@@ -79,6 +167,8 @@ def dashboard():
         mortgages=mortgages,
         alerts=alerts,
         mortgage_alerts=mortgage_alerts,
+        notifications=notifications,
+        alerts_summary=alerts_summary,
     )
 
 
@@ -122,6 +212,23 @@ def logout():
     """User log-out logic."""
     logout_user()
     return redirect(url_for('auth_bp.login'))
+
+
+@main_bp.route("/api/notifications", methods=['GET'])
+@login_required
+def api_notifications():
+    """
+    API endpoint to fetch user notifications.
+    Returns JSON data for AJAX updates to the notification center.
+    """
+    notifications = get_user_notifications(current_user.id)
+    alerts_summary = get_alerts_summary(current_user.id)
+
+    return jsonify({
+        'status': 'success',
+        'notifications': notifications,
+        'alerts_summary': alerts_summary
+    }), 200
 
 
 @main_bp.route("/admin/trigger-alerts", methods=['POST'])
