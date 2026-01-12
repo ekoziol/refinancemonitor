@@ -103,19 +103,27 @@ def evaluate_alert(alert):
     return triggered, reason, current_market_rate
 
 
-def check_and_trigger_alerts():
+def check_and_trigger_alerts(app=None):
     """
     Check all active alerts and trigger notifications if conditions are met.
 
     This function runs on a schedule and evaluates all active paid alerts.
+
+    Args:
+        app: Flask application instance (optional, uses current_app if in context)
     """
+    if app:
+        log = app.logger
+    else:
+        log = current_app.logger
+
     try:
-        current_app.logger.info("Starting scheduled alert check...")
+        log.info("Starting scheduled alert check...")
 
         # Get all active alerts with paid subscriptions
         active_alerts = Alert.query.filter_by(payment_status='active').all()
 
-        current_app.logger.info(f"Found {len(active_alerts)} active alerts to check")
+        log.info(f"Found {len(active_alerts)} active alerts to check")
 
         triggered_count = 0
         for alert in active_alerts:
@@ -136,7 +144,7 @@ def check_and_trigger_alerts():
                         hours_since_last = (datetime.utcnow() - recent_trigger.created_on).total_seconds() / 3600
                         if hours_since_last < 24:
                             should_create_trigger = False
-                            current_app.logger.info(f"Alert {alert.id} already triggered within 24 hours, skipping")
+                            log.info(f"Alert {alert.id} already triggered within 24 hours, skipping")
 
                     if should_create_trigger:
                         # Create trigger record
@@ -152,20 +160,35 @@ def check_and_trigger_alerts():
                         db.session.add(trigger)
                         db.session.commit()
 
-                        current_app.logger.info(f"Alert {alert.id} triggered: {reason}")
+                        log.info(f"Alert {alert.id} triggered: {reason}")
 
                         # Send notification
                         send_alert_notification(trigger.id)
                         triggered_count += 1
 
             except Exception as e:
-                current_app.logger.error(f"Error evaluating alert {alert.id}: {str(e)}")
+                log.error(f"Error evaluating alert {alert.id}: {str(e)}")
                 continue
 
-        current_app.logger.info(f"Alert check complete. Triggered {triggered_count} alerts.")
+        log.info(f"Alert check complete. Triggered {triggered_count} alerts.")
 
     except Exception as e:
-        current_app.logger.error(f"Error in scheduled alert check: {str(e)}")
+        log.error(f"Error in scheduled alert check: {str(e)}")
+
+
+def scheduled_alert_check():
+    """
+    Scheduled task function that checks alerts.
+
+    This function is called by APScheduler according to the cron schedule.
+    It runs within the Flask app context to access the database.
+    """
+    from . import init_app
+
+    # Create app context for database access
+    app = init_app()
+    with app.app_context():
+        check_and_trigger_alerts(app)
 
 
 def init_scheduler(app: Flask):
@@ -209,7 +232,7 @@ def init_scheduler(app: Flask):
 
     # Add job to check alerts daily at 9 AM
     scheduler.add_job(
-        func=lambda: check_and_trigger_alerts(),
+        func=scheduled_alert_check,
         trigger=CronTrigger(hour=9, minute=0),
         id='daily_alert_check',
         name='Check mortgage alerts daily',
@@ -218,7 +241,7 @@ def init_scheduler(app: Flask):
 
     # Optional: Add more frequent checks (every 4 hours)
     scheduler.add_job(
-        func=lambda: check_and_trigger_alerts(),
+        func=scheduled_alert_check,
         trigger=CronTrigger(hour='*/4'),
         id='frequent_alert_check',
         name='Check mortgage alerts every 4 hours',
