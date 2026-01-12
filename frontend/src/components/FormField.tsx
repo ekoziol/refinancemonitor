@@ -17,10 +17,7 @@ export function FormField({
   helpText,
 }: FormFieldProps) {
   const hasError = !!error;
-  const describedBy = [
-    error ? `${id}-error` : null,
-    helpText ? `${id}-help` : null,
-  ]
+  const describedBy = [error ? `${id}-error` : null, helpText ? `${id}-help` : null]
     .filter(Boolean)
     .join(' ');
 
