@@ -35,16 +35,22 @@ def init_app():
         from .assets import compile_static_assets
         from .models import User, Mortgage, Mortgage_Tracking, Alert, Trigger
 
-        # import dash app
+        # import dash apps
         # from .plotlydash.dashboard import init_dashboard
         from .dash.refi_calculator_dash import init_dashboard
+        from .dash.rate_history_dash import init_rate_history_dashboard
 
         app = init_dashboard(app)
+        app = init_rate_history_dashboard(app)
 
         # Register Blueprints
         app.register_blueprint(routes.main_bp)
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
+
+        # Register API blueprints
+        from .api.rates import rates_bp
+        app.register_blueprint(rates_bp)
 
         # Register CLI commands
         from . import cli

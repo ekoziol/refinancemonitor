@@ -16,6 +16,9 @@ from dash.exceptions import PreventUpdate
 # from dash_table import DataTable, FormatTemplate
 
 from ..calc import *
+from ..models import MortgageRate
+from .. import db
+from sqlalchemy import func
 import re
 
 
@@ -265,6 +268,31 @@ def init_dashboard(server):
                             ),
                         ],
                         # style={'backgroundColor': 'gray', "width": "100%"},
+                    ),
+                    dbc.Row(
+                        className="market_rates_row",
+                        style={'padding': '20px 0'},
+                        children=[
+                            dbc.Col(
+                                dbc.Card(
+                                    [
+                                        dbc.CardHeader([
+                                            "Current Market Rates",
+                                            dbc.Button(
+                                                "View Rate History →",
+                                                href="/rates/",
+                                                color="link",
+                                                size="sm",
+                                                external_link=True,
+                                                style={'float': 'right'},
+                                            ),
+                                        ]),
+                                        dbc.CardBody(id="market_rates_display"),
+                                    ]
+                                ),
+                                width=12,
+                            ),
+                        ],
                     ),
                     dbc.Row(
                         className="graph_row",
@@ -945,6 +973,108 @@ def init_callbacks(dash_app):
         # )
 
         return create_breakeven_graph(sdf_recoup_data, target_term)
+
+    @dash_app.callback(
+        Output("market_rates_display", 'children'),
+        Input("current_rate", 'value'),
+        Input("current_term", 'value'),
+    )
+    def update_market_rates(user_rate, user_term):
+        """Display current market rates and compare to user's rate."""
+        # Map term to rate type
+        term_to_type = {
+            360: '30-Year Fixed',
+            180: '15-Year Fixed',
+            240: '20-Year Fixed',
+            120: '10-Year Fixed',
+        }
+
+        try:
+            # Get the most recent date with rate data
+            latest_date = db.session.query(func.max(MortgageRate.rate_date)).filter(
+                MortgageRate.zip_code == '00000'
+            ).scalar()
+
+            if not latest_date:
+                return html.P("Market rate data is being collected. Check back soon!", className="text-muted")
+
+            # Get all rates for the most recent date
+            rates = MortgageRate.query.filter(
+                MortgageRate.zip_code == '00000',
+                MortgageRate.rate_date == latest_date
+            ).all()
+
+            if not rates:
+                return html.P("Market rate data is being collected. Check back soon!", className="text-muted")
+
+            # Build rate cards
+            rate_cards = []
+            user_market_rate = None
+            user_term_type = term_to_type.get(user_term, None)
+
+            for r in rates:
+                rate_type = term_to_type.get(r.term_months, f'{r.term_months}-month')
+                is_user_term = (r.term_months == user_term)
+
+                if is_user_term:
+                    user_market_rate = r.rate
+
+                card_style = {'border': '2px solid #28a745'} if is_user_term else {}
+                badge = html.Span(" (Your Term)", className="badge bg-success ms-2") if is_user_term else ""
+
+                rate_cards.append(
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody([
+                                html.H6([rate_type, badge], className="card-title text-center"),
+                                html.H4(f"{r.rate:.3f}%", className="text-primary text-center"),
+                            ]),
+                            style=card_style,
+                            className="h-100",
+                        ),
+                        width=3,
+                    )
+                )
+
+            # Build comparison section
+            comparison = None
+            if user_rate is not None and user_market_rate is not None:
+                difference = user_rate - user_market_rate
+                if difference >= 1.0:
+                    comparison = dbc.Alert([
+                        html.Strong("Strong Refinancing Opportunity! "),
+                        f"Your rate ({user_rate:.3f}%) is {difference:.3f}% higher than current market ({user_market_rate:.3f}%). ",
+                        "Consider refinancing to potentially save significantly on interest.",
+                    ], color="success")
+                elif difference >= 0.5:
+                    comparison = dbc.Alert([
+                        html.Strong("Possible Refinancing Opportunity. "),
+                        f"Your rate ({user_rate:.3f}%) is {difference:.3f}% higher than current market ({user_market_rate:.3f}%). ",
+                        "Review closing costs vs potential savings.",
+                    ], color="warning")
+                elif difference > 0:
+                    comparison = dbc.Alert([
+                        f"Your rate ({user_rate:.3f}%) is {difference:.3f}% above market ({user_market_rate:.3f}%). ",
+                        "Marginal benefit - likely not worth refinancing costs.",
+                    ], color="secondary")
+                else:
+                    comparison = dbc.Alert([
+                        html.Strong("Your rate is at or below market! "),
+                        f"Your rate ({user_rate:.3f}%) vs market ({user_market_rate:.3f}%). ",
+                        "No refinancing benefit at current rates.",
+                    ], color="info")
+
+            date_str = latest_date.strftime('%B %d, %Y') if latest_date else 'N/A'
+
+            return html.Div([
+                html.P(f"National Average Rates as of {date_str}", className="text-muted mb-3"),
+                dbc.Row(rate_cards, className="mb-3"),
+                comparison if comparison else None,
+            ])
+
+        except Exception as e:
+            print(f"Error fetching market rates: {e}")
+            return html.P("Unable to load market rates. Please try again later.", className="text-muted")
 
     # need to show target monthly payment
     # calculate required interest rate
