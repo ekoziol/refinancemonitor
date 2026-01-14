@@ -30,3 +30,6 @@ requests==2.26.0
 typer==0.4.0
 sentry-sdk[flask]==1.40.0
 Flask-Limiter==3.5.0
+cssmin==0.2.0
+lesscpy==0.15.1
+jsmin==3.0.1
