@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Development
+.env
+.env.local
+.env.*.local
+*.pyc
+__pycache__
+.pytest_cache
+.coverage
+htmlcov
+
+# Node modules (we install fresh in container)
+node_modules
+frontend/node_modules
+
+# Documentation
+*.md
+docs/
+images/
+notebooks/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test files
+tests/
+*_test.py
+test_*.py
+
+# Beads (issue tracking)
+.beads/
+
+# Data files (development only)
+data/
+
+# Modeling notebooks
+modeling/
+
+# Build artifacts that get rebuilt
+frontend/dist
+refi_monitor/static/dist
