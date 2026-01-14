@@ -1,9 +1,12 @@
 #!/bin/bash
-set -e
 
 # Run database migrations (may fail if already applied, that's ok)
 echo "Running database migrations..."
-flask db upgrade || echo "Migration skipped (may be already applied)"
+if flask db upgrade; then
+    echo "Migrations completed successfully"
+else
+    echo "Migration skipped (may be already applied)"
+fi
 
 # Start gunicorn
 echo "Starting gunicorn..."
