@@ -56,9 +56,12 @@ COPY --from=frontend-builder /app/refi_monitor/static/react ./refi_monitor/stati
 # Copy built CSS from css-builder
 COPY --from=css-builder /app/refi_monitor/static/dist ./refi_monitor/static/dist
 
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Expose port (Railway uses $PORT env var)
 EXPOSE 8080
 
-# Start command from railway.json
-# Note: flask db upgrade may fail if migrations already applied; continue anyway
-CMD (flask db upgrade || echo "Migration skipped") && gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 wsgi:app
+# Use entrypoint script for startup
+ENTRYPOINT ["docker-entrypoint.sh"]
