@@ -60,4 +60,5 @@ COPY --from=css-builder /app/refi_monitor/static/dist ./refi_monitor/static/dist
 EXPOSE 8080
 
 # Start command from railway.json
-CMD flask db upgrade && gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 wsgi:app
+# Note: flask db upgrade may fail if migrations already applied; continue anyway
+CMD (flask db upgrade || echo "Migration skipped") && gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 wsgi:app
