@@ -5,7 +5,7 @@
     "buildCommand": "pip install -r requirements.txt && npm install && npm run build:css && cd frontend && npm install && npm run build && cd .."
   },
   "deploy": {
-    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 wsgi:app",
+    "startCommand": "sh -c 'gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 wsgi:app'",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
