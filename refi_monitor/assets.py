@@ -23,14 +23,21 @@
 #     return assets
 
 """Create and bundle CSS and JS files."""
+import os
 from flask_assets import Bundle, Environment
 
 
 def compile_static_assets(assets):
-    """Configure static asset bundles."""
-    # assets = Environment(app)
-    # Environment.auto_build = True
-    # Environment.debug = False
+    """Configure static asset bundles.
+
+    In production, assets are pre-built during Docker build, so we skip
+    runtime compilation. In development, we compile on startup.
+    """
+    # Skip compilation in production (assets are pre-built in Docker)
+    if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('RAILWAY_ENVIRONMENT'):
+        return
+
+    # Development only: compile LESS and JS on startup
     # Stylesheets Bundles
     account_less_bundle = Bundle(
         'src/less/account.less',
