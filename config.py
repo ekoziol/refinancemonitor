@@ -17,8 +17,8 @@ class Config:
 
     # Assets
     LESS_BIN = environ.get("LESS_BIN")
-    ASSETS_DEBUG = environ.get("ASSETS_DEBUG")
-    LESS_RUN_IN_DEBUG = environ.get("LESS_RUN_IN_DEBUG")
+    ASSETS_DEBUG = environ.get("ASSETS_DEBUG", "False") == "True"
+    LESS_RUN_IN_DEBUG = environ.get("LESS_RUN_IN_DEBUG", "False") == "True"
 
     # Static Assets
     STATIC_FOLDER = "static"
