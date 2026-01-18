@@ -2,8 +2,9 @@
 from flask import current_app, render_template_string
 from flask_mail import Message
 from . import mail, db
-from .models import User, Alert, Mortgage, Trigger
-from datetime import datetime
+from .models import User, Alert, Mortgage, Trigger, MortgageRate
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 
 def send_alert_notification(trigger_id):
@@ -269,3 +270,266 @@ Questions? Contact us or log in to manage your alerts.
     except Exception as e:
         current_app.logger.error(f"Failed to send payment confirmation to {user_email}: {str(e)}")
         return False
+
+
+def send_monthly_report(user_id):
+    """
+    Send monthly report email to a user with summary of their alerts and market conditions.
+
+    Args:
+        user_id: ID of the user to send the report to
+
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    user = User.query.get(user_id)
+    if not user:
+        current_app.logger.error(f"User {user_id} not found for monthly report")
+        return False
+
+    # Get user's active alerts
+    active_alerts = Alert.query.filter_by(
+        user_id=user_id,
+        payment_status='active'
+    ).all()
+
+    if not active_alerts:
+        current_app.logger.info(f"User {user_id} has no active alerts, skipping monthly report")
+        return False
+
+    # Get triggers from the last month
+    last_month = datetime.utcnow() - timedelta(days=30)
+    recent_triggers = Trigger.query.join(Alert).filter(
+        Alert.user_id == user_id,
+        Trigger.created_on >= last_month
+    ).all()
+
+    # Get current market rates
+    latest_rates = {}
+    for term in [180, 240, 360]:  # 15, 20, 30 year terms in months
+        rate = MortgageRate.query.filter_by(
+            term_months=term
+        ).order_by(MortgageRate.rate_date.desc()).first()
+        if rate:
+            latest_rates[term // 12] = rate.rate
+
+    # Build mortgage summaries
+    mortgage_summaries = []
+    for alert in active_alerts:
+        mortgage = Mortgage.query.get(alert.mortgage_id)
+        if mortgage:
+            mortgage_summaries.append({
+                'name': mortgage.name,
+                'remaining_principal': mortgage.remaining_principal,
+                'current_rate': mortgage.original_interest_rate,
+                'remaining_term': mortgage.remaining_term,
+                'alert_type': alert.alert_type,
+                'target_monthly_payment': alert.target_monthly_payment,
+                'target_interest_rate': alert.target_interest_rate
+            })
+
+    try:
+        report_date = datetime.utcnow().strftime("%B %Y")
+        subject = f"RefiAlert: Your Monthly Report for {report_date}"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .section { background-color: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #2196F3; }
+                .rate-box { background-color: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+                .trigger-alert { background-color: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background-color: #f5f5f5; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Monthly Report</h1>
+                    <p>{{ report_date }}</p>
+                </div>
+                <div class="content">
+                    <h2>Hello, {{ user_name }}!</h2>
+                    <p>Here's your monthly summary of mortgage alerts and market conditions.</p>
+
+                    {% if market_rates %}
+                    <div class="section">
+                        <h3>Current Market Rates</h3>
+                        <div class="rate-box">
+                            <table>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Rate</th>
+                                </tr>
+                                {% for term, rate in market_rates.items() %}
+                                <tr>
+                                    <td>{{ term }}-Year Fixed</td>
+                                    <td>{{ "{:.2f}".format(rate * 100) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="section">
+                        <h3>Your Active Alerts ({{ mortgages|length }})</h3>
+                        {% for m in mortgages %}
+                        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                            <strong>{{ m.name }}</strong><br>
+                            <small>
+                                Principal: ${{ "{:,.2f}".format(m.remaining_principal) }} |
+                                Current Rate: {{ "{:.2f}".format(m.current_rate * 100) }}% |
+                                Term: {{ m.remaining_term }} months<br>
+                                Alert: {{ m.alert_type.replace('_', ' ').title() }}
+                                {% if m.target_monthly_payment %}
+                                 - Target Payment: ${{ "{:,.2f}".format(m.target_monthly_payment) }}
+                                {% endif %}
+                                {% if m.target_interest_rate %}
+                                 - Target Rate: {{ "{:.2f}".format(m.target_interest_rate * 100) }}%
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if triggers %}
+                    <div class="section">
+                        <h3>Alerts Triggered This Month ({{ triggers|length }})</h3>
+                        {% for t in triggers %}
+                        <div class="trigger-alert">
+                            <strong>{{ t.alert_type.replace('_', ' ').title() }}</strong><br>
+                            <small>{{ t.alert_trigger_reason }}</small><br>
+                            <small><em>{{ t.alert_trigger_date.strftime("%B %d, %Y") if t.alert_trigger_date else "N/A" }}</em></small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="section">
+                        <h3>Alerts Triggered This Month</h3>
+                        <p>No alerts were triggered this month. We continue to monitor rates for you.</p>
+                    </div>
+                    {% endif %}
+
+                    <p>We'll continue monitoring mortgage rates and notify you when your refinancing conditions are met.</p>
+                </div>
+                <div class="footer">
+                    <p>This monthly report was generated automatically by RefiAlert.</p>
+                    <p>To manage your alerts or update your preferences, please log in to your account.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=user.name,
+        report_date=report_date,
+        market_rates=latest_rates,
+        mortgages=mortgage_summaries,
+        triggers=recent_triggers
+        )
+
+        # Plain text version
+        text_body = f"""
+RefiAlert Monthly Report - {report_date}
+
+Hello, {user.name}!
+
+Here's your monthly summary of mortgage alerts and market conditions.
+
+"""
+        if latest_rates:
+            text_body += "CURRENT MARKET RATES\n"
+            text_body += "-" * 30 + "\n"
+            for term, rate in latest_rates.items():
+                text_body += f"{term}-Year Fixed: {rate * 100:.2f}%\n"
+            text_body += "\n"
+
+        text_body += f"YOUR ACTIVE ALERTS ({len(mortgage_summaries)})\n"
+        text_body += "-" * 30 + "\n"
+        for m in mortgage_summaries:
+            text_body += f"\n{m['name']}\n"
+            text_body += f"  Principal: ${m['remaining_principal']:,.2f}\n"
+            text_body += f"  Current Rate: {m['current_rate'] * 100:.2f}%\n"
+            text_body += f"  Alert Type: {m['alert_type'].replace('_', ' ').title()}\n"
+            if m['target_monthly_payment']:
+                text_body += f"  Target Payment: ${m['target_monthly_payment']:,.2f}\n"
+            if m['target_interest_rate']:
+                text_body += f"  Target Rate: {m['target_interest_rate'] * 100:.2f}%\n"
+
+        if recent_triggers:
+            text_body += f"\nALERTS TRIGGERED THIS MONTH ({len(recent_triggers)})\n"
+            text_body += "-" * 30 + "\n"
+            for t in recent_triggers:
+                text_body += f"\n{t.alert_type.replace('_', ' ').title()}\n"
+                text_body += f"  {t.alert_trigger_reason}\n"
+                if t.alert_trigger_date:
+                    text_body += f"  Date: {t.alert_trigger_date.strftime('%B %d, %Y')}\n"
+        else:
+            text_body += "\nALERTS TRIGGERED THIS MONTH\n"
+            text_body += "-" * 30 + "\n"
+            text_body += "No alerts were triggered this month. We continue to monitor rates for you.\n"
+
+        text_body += """
+---
+This monthly report was generated automatically by RefiAlert.
+To manage your alerts or update your preferences, please log in to your account.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=text_body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Monthly report sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send monthly report to user {user_id}: {str(e)}")
+        return False
+
+
+def send_all_monthly_reports():
+    """
+    Send monthly reports to all users with active alerts.
+
+    Returns:
+        dict: Summary of reports sent
+    """
+    # Get all users with active alerts
+    users_with_alerts = db.session.query(User.id).join(Alert).filter(
+        Alert.payment_status == 'active'
+    ).distinct().all()
+
+    sent_count = 0
+    failed_count = 0
+
+    for (user_id,) in users_with_alerts:
+        try:
+            if send_monthly_report(user_id):
+                sent_count += 1
+            else:
+                failed_count += 1
+        except Exception as e:
+            current_app.logger.error(f"Error sending monthly report to user {user_id}: {e}")
+            failed_count += 1
+
+    current_app.logger.info(
+        f"Monthly reports complete: sent={sent_count}, failed={failed_count}"
+    )
+
+    return {
+        'sent': sent_count,
+        'failed': failed_count,
+        'total': len(users_with_alerts)
+    }

@@ -126,6 +126,13 @@ scheduler.add_job(
     trigger=CronTrigger(hour='*/4'),
     id='frequent_alert_check'
 )
+
+# Monthly reports on 1st of each month at 8 AM
+scheduler.add_job(
+    func=scheduled_monthly_report,
+    trigger=CronTrigger(day=1, hour=8, minute=0),
+    id='monthly_report'
+)
 ```
 
 To customize the schedule, modify the `CronTrigger` parameters:
