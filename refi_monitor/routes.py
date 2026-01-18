@@ -1,11 +1,14 @@
 """Routes for parent Flask app."""
 import os
+from datetime import datetime, timedelta
 from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert, Trigger, Subscription
+from sqlalchemy import func
+from . import db
+from .models import Mortgage, Alert, Trigger, Subscription, User, MortgageRate, EmailLog
 from .plots import *
 from .scheduler import trigger_manual_check
 
@@ -184,4 +187,89 @@ def history():
         trigger_history=trigger_history,
         alerts=alerts,
         mortgages=mortgages
+    )
+
+
+@main_bp.route('/admin', methods=['GET'])
+@login_required
+def admin_dashboard():
+    """Admin Dashboard with user counts, subscription metrics, and system status."""
+
+    # User metrics
+    total_users = User.query.count()
+    verified_users = User.query.filter_by(email_verified=True).count()
+    unverified_users = total_users - verified_users
+
+    # Users created in last 7 days
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    new_users_week = User.query.filter(User.created_on >= week_ago).count()
+
+    # Subscription metrics
+    total_subscriptions = Subscription.query.count()
+    active_subscriptions = Subscription.query.filter_by(payment_status='active').count()
+    failed_subscriptions = Subscription.query.filter_by(payment_status='payment_failed').count()
+    incomplete_subscriptions = Subscription.query.filter_by(payment_status='incomplete').count()
+    paused_subscriptions = Subscription.query.filter(Subscription.paused_at.isnot(None)).count()
+
+    # Alert metrics
+    total_alerts = Alert.query.filter(Alert.deleted_at.is_(None)).count()
+    deleted_alerts = Alert.query.filter(Alert.deleted_at.isnot(None)).count()
+
+    # Mortgage metrics
+    total_mortgages = Mortgage.query.count()
+
+    # Trigger metrics
+    total_triggers = Trigger.query.count()
+    triggered_alerts = Trigger.query.filter_by(alert_trigger_status=1).count()
+
+    # Recent triggers (last 7 days)
+    recent_triggers = Trigger.query.filter(Trigger.created_on >= week_ago).count()
+
+    # Email metrics
+    total_emails = EmailLog.query.count()
+    sent_emails = EmailLog.query.filter_by(status='sent').count()
+    failed_emails = EmailLog.query.filter_by(status='failed').count()
+    recent_emails = EmailLog.query.filter(EmailLog.created_on >= week_ago).count()
+
+    # System status - latest mortgage rate update
+    latest_rate = MortgageRate.query.order_by(MortgageRate.created_on.desc()).first()
+    latest_rate_update = latest_rate.created_on if latest_rate else None
+
+    # Recent users (last 10)
+    recent_users = User.query.order_by(User.created_on.desc()).limit(10).all()
+
+    return render_template(
+        'admin_dashboard.jinja2',
+        title='Admin Dashboard',
+        template='admin-template',
+        current_user=current_user,
+        # User metrics
+        total_users=total_users,
+        verified_users=verified_users,
+        unverified_users=unverified_users,
+        new_users_week=new_users_week,
+        # Subscription metrics
+        total_subscriptions=total_subscriptions,
+        active_subscriptions=active_subscriptions,
+        failed_subscriptions=failed_subscriptions,
+        incomplete_subscriptions=incomplete_subscriptions,
+        paused_subscriptions=paused_subscriptions,
+        # Alert metrics
+        total_alerts=total_alerts,
+        deleted_alerts=deleted_alerts,
+        # Mortgage metrics
+        total_mortgages=total_mortgages,
+        # Trigger metrics
+        total_triggers=total_triggers,
+        triggered_alerts=triggered_alerts,
+        recent_triggers=recent_triggers,
+        # Email metrics
+        total_emails=total_emails,
+        sent_emails=sent_emails,
+        failed_emails=failed_emails,
+        recent_emails=recent_emails,
+        # System status
+        latest_rate_update=latest_rate_update,
+        # Recent data
+        recent_users=recent_users,
     )

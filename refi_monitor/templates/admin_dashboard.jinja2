@@ -1,0 +1,216 @@
+{% extends "main_layout.jinja2" %}
+
+{% block pagecontent %}
+<div class="ml-64 p-8">
+    <h1 class="text-4xl text-center text-gray-800 mb-8">Admin Dashboard</h1>
+
+    <!-- User Metrics Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">User Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-r from-blue-800 to-blue-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_users }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Total Users</p>
+            </div>
+            <div class="bg-gradient-to-r from-green-800 to-green-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ verified_users }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Verified Users</p>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-700 to-yellow-600 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ unverified_users }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Unverified Users</p>
+            </div>
+            <div class="bg-gradient-to-r from-purple-800 to-purple-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ new_users_week }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">New Users (7 days)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Metrics Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">Subscription Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_subscriptions }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Total Subscriptions</p>
+            </div>
+            <div class="bg-gradient-to-r from-green-800 to-green-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ active_subscriptions }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Active</p>
+            </div>
+            <div class="bg-gradient-to-r from-red-800 to-red-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ failed_subscriptions }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Payment Failed</p>
+            </div>
+            <div class="bg-gradient-to-r from-yellow-700 to-yellow-600 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ incomplete_subscriptions }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Incomplete</p>
+            </div>
+            <div class="bg-gradient-to-r from-orange-700 to-orange-600 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ paused_subscriptions }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Paused</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert & Mortgage Metrics Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">Alert & Mortgage Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_alerts }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Active Alerts</p>
+            </div>
+            <div class="bg-gradient-to-r from-gray-600 to-gray-500 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ deleted_alerts }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Deleted Alerts</p>
+            </div>
+            <div class="bg-gradient-to-r from-blue-800 to-blue-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_mortgages }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Total Mortgages</p>
+            </div>
+            <div class="bg-gradient-to-r from-green-800 to-green-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ triggered_alerts }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Triggered Alerts</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trigger & Email Metrics Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">Trigger & Email Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_triggers }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Total Triggers</p>
+            </div>
+            <div class="bg-gradient-to-r from-purple-800 to-purple-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ recent_triggers }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Triggers (7 days)</p>
+            </div>
+            <div class="bg-gradient-to-r from-blue-800 to-blue-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ total_emails }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Total Emails</p>
+            </div>
+            <div class="bg-gradient-to-r from-green-800 to-green-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ sent_emails }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Sent Emails</p>
+            </div>
+            <div class="bg-gradient-to-r from-red-800 to-red-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-3xl text-center text-gray-100 font-bold">{{ failed_emails }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Failed Emails</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">System Status</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-xl text-center text-gray-100">
+                    {% if latest_rate_update %}
+                        {{ latest_rate_update.strftime('%Y-%m-%d %H:%M UTC') }}
+                    {% else %}
+                        No rate data
+                    {% endif %}
+                </h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Last Rate Update</p>
+            </div>
+            <div class="bg-gradient-to-r from-blue-800 to-blue-700 shadow-lg rounded-lg p-6">
+                <h3 class="text-xl text-center text-gray-100">{{ recent_emails }}</h3>
+                <p class="text-sm text-gray-300 text-center mt-2">Emails Sent (7 days)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">Recent Users</h2>
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-800">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Verified</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Login</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in recent_users %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.email }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if user.email_verified %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Yes</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">No</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.created_on.strftime('%Y-%m-%d') if user.created_on else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Admin Actions Section -->
+    <div class="mb-8">
+        <h2 class="text-2xl text-gray-700 mb-4 font-semibold">Admin Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button id="trigger-alerts-btn" class="bg-gradient-to-r from-green-700 to-green-600 hover:from-green-600 hover:to-green-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-200">
+                Trigger Alert Check
+            </button>
+            <a href="{{ url_for('main_bp.dashboard') }}" class="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-200 text-center">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const triggerBtn = document.getElementById('trigger-alerts-btn');
+
+    triggerBtn.addEventListener('click', function() {
+        triggerBtn.disabled = true;
+        triggerBtn.textContent = 'Running...';
+
+        fetch('/admin/trigger-alerts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.status === 'success') {
+                alert('Alert check completed: ' + data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(function(error) {
+            alert('Error triggering alerts: ' + error.message);
+        })
+        .finally(function() {
+            triggerBtn.disabled = false;
+            triggerBtn.textContent = 'Trigger Alert Check';
+        });
+    });
+});
+</script>
+{% endblock %}
