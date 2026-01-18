@@ -213,6 +213,7 @@ class Trigger(db.Model):
     alert_trigger_date = db.Column(
         db.DateTime, index=False, unique=False, nullable=True
     )
+    triggered_rate = db.Column(db.Float, nullable=True, unique=False)
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
