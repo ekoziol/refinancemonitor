@@ -2,7 +2,7 @@
 
 {% block pagecontent %}
 <b><h1 class="text-4xl text-center text-gray-800">Alert History</h1></b>
-<p class="text-center text-gray-600 mt-2">View past alert triggers with dates, reasons, and status</p>
+<p class="text-center text-gray-600 mt-2">View past alert triggers with timestamp, rate, threshold, and notification status</p>
 
 <div class="ml-72 mt-8 mr-8">
 {% if trigger_history|length < 1 %}
@@ -16,11 +16,11 @@
     <table class="w-full">
         <thead>
             <tr>
-                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left rounded-tl-lg">Date</th>
+                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left rounded-tl-lg">Timestamp</th>
                 <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Mortgage</th>
-                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Alert Type</th>
-                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Reason</th>
-                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left rounded-tr-lg">Status</th>
+                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Rate</th>
+                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Threshold</th>
+                <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left rounded-tr-lg">Notification</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +28,7 @@
             {% set trigger = item.trigger %}
             {% set alert = item.alert %}
             {% set mortgage = item.mortgage %}
+            {% set email_log = item.email_log %}
             <tr class="border-b border-gray-300 hover:bg-gray-200">
                 <td class="px-4 py-4">
                     <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
@@ -57,26 +58,8 @@
                                     Unknown
                                 {% endif %}
                             </h2>
-                            <h3 class="text-xs text-gray-400 text-center">
-                                {% if mortgage %}
-                                    {{ "${:,.0f}".format(mortgage.remaining_principal) }}
-                                {% endif %}
-                            </h3>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-4 py-4">
-                    <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
-                        <div class="p-3">
-                            <h2 class="text-md text-center text-gray-200 capitalize">{{ trigger.alert_type }}</h2>
-                            <h3 class="text-xs text-gray-400 text-center">
-                                {% if alert %}
-                                    {% if alert.alert_type == "Monthly Payment" %}
-                                        Target: ${{ alert.target_monthly_payment }}
-                                    {% elif alert.alert_type == "Interest Rate" %}
-                                        Target: {{ alert.target_interest_rate }}%
-                                    {% endif %}
-                                {% endif %}
+                            <h3 class="text-xs text-gray-400 text-center capitalize">
+                                {{ trigger.alert_type }}
                             </h3>
                         </div>
                     </div>
@@ -84,21 +67,58 @@
                 <td class="px-4 py-4">
                     <div class="bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg rounded-lg">
                         <div class="p-3">
-                            <h2 class="text-sm text-center text-gray-200">{{ trigger.alert_trigger_reason }}</h2>
+                            <h2 class="text-md text-center text-gray-200">
+                                {% if trigger.triggered_rate is not none %}
+                                    {{ "%.2f"|format(trigger.triggered_rate * 100) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </h2>
+                            <h3 class="text-xs text-gray-400 text-center">Market Rate</h3>
                         </div>
                     </div>
                 </td>
                 <td class="px-4 py-4">
-                    <div class="bg-gradient-to-r {% if trigger.alert_trigger_status == 1 %}from-green-900 to-green-800{% else %}from-yellow-800 to-yellow-700{% endif %} shadow-lg rounded-lg">
+                    <div class="bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg rounded-lg">
                         <div class="p-3">
                             <h2 class="text-md text-center text-gray-200">
-                                {% if trigger.alert_trigger_status == 1 %}
-                                    Triggered
+                                {% if alert %}
+                                    {% if alert.alert_type == "Monthly Payment" %}
+                                        ${{ "{:,.0f}".format(alert.target_monthly_payment) }}
+                                    {% elif alert.alert_type == "Interest Rate" %}
+                                        {{ "%.2f"|format(alert.target_interest_rate * 100) }}%
+                                    {% endif %}
                                 {% else %}
-                                    Pending
+                                    N/A
                                 {% endif %}
                             </h2>
-                            <h3 class="text-xs text-gray-400 text-center">Email Sent</h3>
+                            <h3 class="text-xs text-gray-400 text-center">Target</h3>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-4">
+                    <div class="bg-gradient-to-r {% if email_log and email_log.status == 'sent' %}from-green-900 to-green-800{% elif email_log and email_log.status == 'failed' %}from-red-900 to-red-800{% else %}from-yellow-800 to-yellow-700{% endif %} shadow-lg rounded-lg">
+                        <div class="p-3">
+                            <h2 class="text-md text-center text-gray-200">
+                                {% if email_log %}
+                                    {% if email_log.status == 'sent' %}
+                                        Sent
+                                    {% elif email_log.status == 'failed' %}
+                                        Failed
+                                    {% else %}
+                                        {{ email_log.status|capitalize }}
+                                    {% endif %}
+                                {% else %}
+                                    Not Sent
+                                {% endif %}
+                            </h2>
+                            <h3 class="text-xs text-gray-400 text-center">
+                                {% if email_log and email_log.sent_at %}
+                                    {{ email_log.sent_at.strftime('%I:%M %p') }}
+                                {% else %}
+                                    Email
+                                {% endif %}
+                            </h3>
                         </div>
                     </div>
                 </td>

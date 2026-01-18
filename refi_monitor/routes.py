@@ -168,7 +168,7 @@ def system_health():
 @main_bp.route('/history', methods=['GET'])
 @login_required
 def history():
-    """Alert History View - shows past triggers with dates, reasons, and actions."""
+    """Alert History View - shows past triggers with dates, rates, thresholds, and notification status."""
     mortgages = Mortgage.query.filter_by(user_id=current_user.id).all()
     mortgage_ids = [m.id for m in mortgages]
 
@@ -182,15 +182,27 @@ def history():
         Trigger.alert_id.in_(alert_ids)
     ).order_by(Trigger.alert_trigger_date.desc()).all()
 
-    # Build trigger data with related alert and mortgage info
+    # Get all trigger IDs to batch query email logs
+    trigger_ids = [t.id for t in triggers]
+    email_logs = EmailLog.query.filter(
+        EmailLog.related_entity_type == 'trigger',
+        EmailLog.related_entity_id.in_(trigger_ids)
+    ).all()
+
+    # Create a lookup dict for email logs by trigger ID
+    email_log_by_trigger = {log.related_entity_id: log for log in email_logs}
+
+    # Build trigger data with related alert, mortgage, and email notification info
     trigger_history = []
     for trigger in triggers:
         alert = Alert.query.get(trigger.alert_id)
         mortgage = Mortgage.query.get(alert.mortgage_id) if alert else None
+        email_log = email_log_by_trigger.get(trigger.id)
         trigger_history.append({
             'trigger': trigger,
             'alert': alert,
-            'mortgage': mortgage
+            'mortgage': mortgage,
+            'email_log': email_log
         })
 
     return render_template(

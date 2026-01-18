@@ -190,6 +190,7 @@ def check_and_trigger_alerts():
                             alert_trigger_status=1,
                             alert_trigger_reason=reason,
                             alert_trigger_date=datetime.utcnow(),
+                            triggered_rate=current_rate,
                             created_on=datetime.utcnow(),
                             updated_on=datetime.utcnow()
                         )
