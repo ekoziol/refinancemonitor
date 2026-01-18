@@ -5,7 +5,7 @@ from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert
+from .models import Mortgage, Alert, Trigger
 from .plots import *
 from .scheduler import trigger_manual_check
 
@@ -138,3 +138,42 @@ def admin_trigger_alerts():
         return jsonify({'status': 'success', 'message': result}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@main_bp.route('/history', methods=['GET'])
+@login_required
+def history():
+    """Alert History View - shows past triggers with dates, reasons, and actions."""
+    mortgages = Mortgage.query.filter_by(user_id=current_user.id).all()
+    mortgage_ids = [m.id for m in mortgages]
+
+    alerts = Alert.query.filter(
+        Alert.mortgage_id.in_(mortgage_ids),
+        Alert.initial_payment == True
+    ).all()
+    alert_ids = [a.id for a in alerts]
+
+    triggers = Trigger.query.filter(
+        Trigger.alert_id.in_(alert_ids)
+    ).order_by(Trigger.alert_trigger_date.desc()).all()
+
+    # Build trigger data with related alert and mortgage info
+    trigger_history = []
+    for trigger in triggers:
+        alert = Alert.query.get(trigger.alert_id)
+        mortgage = Mortgage.query.get(alert.mortgage_id) if alert else None
+        trigger_history.append({
+            'trigger': trigger,
+            'alert': alert,
+            'mortgage': mortgage
+        })
+
+    return render_template(
+        'alert_history.jinja2',
+        title='Alert History',
+        template='history-template',
+        current_user=current_user,
+        trigger_history=trigger_history,
+        alerts=alerts,
+        mortgages=mortgages
+    )
