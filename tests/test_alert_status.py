@@ -15,17 +15,23 @@ def utcnow():
 class TestAlertStatus:
     """Test Alert.get_status() status calculation logic."""
 
-    def _create_mock_alert(self, initial_payment=True, payment_status='active', triggers=None):
+    def _create_mock_alert(self, initial_payment=True, payment_status='active', triggers=None, paused_at=None):
         """Create a mock Alert with subscription data."""
         alert = MagicMock()
         alert.triggers = triggers or []
+        alert.paused_at = paused_at
 
         # Subscription proxy properties
         alert.initial_payment = initial_payment
         alert.payment_status = payment_status
 
+        # Bind is_paused property
+        type(alert).is_paused = property(lambda self: self.paused_at is not None)
+
         # Use the actual get_status logic
         def get_status():
+            if alert.is_paused:
+                return 'paused'
             if alert.payment_status == 'payment_failed':
                 return 'paused'
             if not alert.initial_payment or alert.payment_status != 'active':
@@ -236,14 +242,20 @@ class TestAlertStatus:
 class TestAlertStatusPriority:
     """Test status priority order: paused > waiting > triggered > active."""
 
-    def _create_mock_alert(self, initial_payment=True, payment_status='active', triggers=None):
+    def _create_mock_alert(self, initial_payment=True, payment_status='active', triggers=None, paused_at=None):
         """Create a mock Alert with subscription data."""
         alert = MagicMock()
         alert.triggers = triggers or []
+        alert.paused_at = paused_at
         alert.initial_payment = initial_payment
         alert.payment_status = payment_status
 
+        # Bind is_paused property
+        type(alert).is_paused = property(lambda self: self.paused_at is not None)
+
         def get_status():
+            if alert.is_paused:
+                return 'paused'
             if alert.payment_status == 'payment_failed':
                 return 'paused'
             if not alert.initial_payment or alert.payment_status != 'active':

@@ -219,7 +219,7 @@ def check_and_trigger_alerts():
         active_alerts = Alert.query.join(Subscription).filter(
             Subscription.payment_status == 'active',
             Alert.deleted_at.is_(None),
-            Subscription.paused_at.is_(None)
+            Alert.paused_at.is_(None)
         ).all()
 
         current_app.logger.info(f"Found {len(active_alerts)} active alerts to check")
