@@ -3,10 +3,12 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 from datetime import datetime, timedelta
 from sqlalchemy import func
+import stripe
 from . import db
 from .models import User, Mortgage, Alert, MortgageRate, EmailLog, Trigger, Subscription
 from .calc import calc_loan_monthly_payment
 from .scheduler import get_scheduler_status
+from .notifications import send_cancellation_confirmation
 
 
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api')
@@ -43,6 +45,7 @@ def alert_to_dict(alert):
         'estimate_refinance_cost': alert.estimate_refinance_cost,
         'calculated_refinance_cost': alert.calculated_refinance_cost,
         'payment_status': alert.payment_status,
+        'status': alert.get_status(),
         'created_on': alert.created_on.isoformat() if alert.created_on else None,
         'updated_on': alert.updated_on.isoformat() if alert.updated_on else None,
     }
@@ -240,8 +243,8 @@ def update_alert(alert_id):
 @api_bp.route('/alerts/<int:alert_id>', methods=['DELETE'])
 @login_required
 def delete_alert(alert_id):
-    """Delete an alert."""
-    alert = Alert.query.filter_by(id=alert_id).first()
+    """Delete an alert by canceling the Stripe subscription and soft-deleting the record."""
+    alert = Alert.query.filter_by(id=alert_id, deleted_at=None).first()
     if not alert:
         return jsonify({'error': 'Alert not found'}), 404
 
@@ -249,8 +252,30 @@ def delete_alert(alert_id):
     if not mortgage:
         return jsonify({'error': 'Alert not found'}), 404
 
-    db.session.delete(alert)
+    # Cancel Stripe subscription if exists
+    subscription_id = alert.stripe_subscription_id or alert.stripe_invoice_id
+    if subscription_id:
+        try:
+            stripe.Subscription.cancel(subscription_id)
+        except stripe.error.InvalidRequestError as e:
+            # Subscription may already be canceled or not exist
+            print(f"Stripe subscription cancel error: {e}")
+        except stripe.error.StripeError as e:
+            print(f"Stripe error: {e}")
+            return jsonify({'error': 'Error canceling subscription. Please try again.'}), 500
+
+    # Soft delete the alert and update subscription status
+    alert.deleted_at = datetime.utcnow()
+    if alert.subscription:
+        alert.subscription.payment_status = 'canceled'
+        alert.subscription.updated_on = datetime.utcnow()
     db.session.commit()
+
+    # Send cancellation confirmation email
+    user = User.query.get(current_user.id)
+    if user:
+        send_cancellation_confirmation(user.email, alert_id)
+
     return jsonify({'message': 'Alert deleted successfully'})
 
 
