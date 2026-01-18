@@ -144,3 +144,40 @@ def calculate_recoup_data(
     #     df['interest_savings'] =
 
     return df
+
+
+def calculate_break_even_analysis(
+    remaining_principal,
+    current_rate,
+    remaining_term,
+    target_rate,
+    target_term,
+    refi_cost
+):
+    """
+    Calculate break-even analysis for refinancing.
+
+    Returns a dict with:
+    - target_rate: The target interest rate for refinancing
+    - potential_savings: Monthly payment savings
+    - break_even_months: Months until refi cost is recouped
+    """
+    current_monthly = calc_loan_monthly_payment(
+        remaining_principal, current_rate, remaining_term
+    )
+    new_monthly = calc_loan_monthly_payment(
+        remaining_principal, target_rate / 100, target_term * 12
+    )
+
+    monthly_savings = current_monthly - new_monthly
+
+    if monthly_savings <= 0:
+        return None
+
+    break_even_months = int(time_to_even(refi_cost, monthly_savings))
+
+    return {
+        'target_rate': target_rate,
+        'potential_savings': round(monthly_savings, 0),
+        'break_even_months': break_even_months
+    }

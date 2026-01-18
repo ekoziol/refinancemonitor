@@ -8,6 +8,7 @@ from flask_login import current_user, login_required, logout_user
 from .models import Mortgage, Alert
 from .plots import *
 from .scheduler import trigger_manual_check
+from .calc import calculate_break_even_analysis
 
 # Blueprint Configuration
 main_bp = Blueprint(
@@ -63,12 +64,23 @@ def dashboard():
         matched = 0
         for a in alerts:
             if m.id == a.mortgage_id:
+                # Calculate break-even analysis for alerts with interest rate targets
+                break_even = None
+                if a.target_interest_rate and a.estimate_refinance_cost:
+                    break_even = calculate_break_even_analysis(
+                        remaining_principal=m.remaining_principal,
+                        current_rate=m.original_interest_rate,
+                        remaining_term=m.remaining_term,
+                        target_rate=a.target_interest_rate,
+                        target_term=a.target_term,
+                        refi_cost=a.estimate_refinance_cost
+                    )
                 mortgage_alerts.append(
-                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id)]
+                    [m, a, status_target_payment_plot(m.id), time_target_plot(m.id), break_even]
                 )
                 matched += 1
         if matched == 0:
-            mortgage_alerts.append([m, None, None, None])
+            mortgage_alerts.append([m, None, None, None, None])
 
     return render_template(
         'dashboard.jinja2',

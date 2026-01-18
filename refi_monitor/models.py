@@ -79,6 +79,7 @@ class Alert(db.Model):
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
 
+    is_paused = db.Column(db.Boolean, index=False, unique=False, nullable=True, default=False)
     initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True)
     payment_status = db.Column(db.String, index=False, unique=False, nullable=True)
     initial_period_start = db.Column(

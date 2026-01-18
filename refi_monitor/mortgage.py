@@ -391,3 +391,49 @@ def alert_payment_webhook():
         print('Unhandled event type {}'.format(event_type))
 
     return jsonify({'status': 'success'})
+
+
+@mortgage_bp.route('/togglepause/<int:alert_id>', methods=['POST'])
+@login_required
+def toggle_pause(alert_id):
+    """Toggle the pause status of an alert."""
+    alert = Alert.query.filter_by(
+        id=alert_id, user_id=current_user.id, initial_payment=True
+    ).first()
+
+    if alert is None:
+        flash('Alert not found')
+        return redirect(url_for('main_bp.dashboard'))
+
+    alert.is_paused = not alert.is_paused
+    db.session.commit()
+
+    if alert.is_paused:
+        flash('Alert paused successfully')
+    else:
+        flash('Alert resumed successfully')
+
+    return redirect(url_for('main_bp.dashboard'))
+
+
+@mortgage_bp.route('/deletemortgage/<int:m_id>', methods=['GET', 'POST'])
+@login_required
+def deletemortgage(m_id):
+    """Delete a mortgage and its associated alerts."""
+    mortgage = Mortgage.query.filter_by(
+        id=m_id, user_id=current_user.id
+    ).first()
+
+    if mortgage is None:
+        flash('Mortgage not found')
+        return redirect(url_for('main_bp.dashboard'))
+
+    # Delete associated alerts first
+    Alert.query.filter_by(mortgage_id=m_id).delete()
+
+    # Delete the mortgage
+    db.session.delete(mortgage)
+    db.session.commit()
+
+    flash('Mortgage removed successfully')
+    return redirect(url_for('main_bp.dashboard'))

@@ -1,151 +1,69 @@
 {% extends "main_layout.jinja2" %}
 
 {% block pagecontent %}
-<b><h1 class="text-4xl text-center text-gray-800">Refinance Monitor Dashboard</h1></b>
+<div class="ml-72 p-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Refinance Monitor Dashboard</h1>
 
-<table class="ml-72 mt-16">
-
-{% if mortgage_alerts|length < 1 %}
-<tr>
-    <td>
+    {% if mortgage_alerts|length < 1 %}
+    {# Empty state - no mortgages #}
+    <div class="max-w-md">
         <a href="{{url_for('mortgage_bp.addmortgage')}}">
-            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                    <div class="md:p-7 p-4">
-                        <h2 class="text-xl text-center text-gray-200 capitalize">Click to Add a Mortgage</h2>
-                        <h3 class="text-sm  text-gray-400  text-center">Welcome to Refinance Monitor!</h3>
-                    </div>
+            <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg hover:shadow-xl transition-shadow">
+                <div class="p-7">
+                    <h2 class="text-xl text-center text-gray-200">Click to Add a Mortgage</h2>
+                    <h3 class="text-sm text-gray-400 text-center mt-2">Welcome to Refinance Monitor!</h3>
                 </div>
+            </div>
         </a>
-    </td>
-</tr>
-{% else %}
-    {% for ma in mortgage_alerts %}
-    {% set m = ma[0] %}
-    {% set a = ma[1] %}
-    {% set status_graph = ma[2] %}
-    {% set time_graph = ma[3] %}
-    <tr>
-        <tr>
-            <td>
-                <table>
-    <!--                 <tr>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Mortgage Name</h3>
-                                </div>
-                        </div>
-                    </tr> -->
-                    <tr>
-     <!--                    <td><b>Remaining Principal: </b></td><td>${{ m.remaining_principal }}</td> -->
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                    <div class="md:p-7 p-4">
-                                        <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.name }}</h2>
-                                        <h3 class="text-sm  text-gray-400  text-center">Mortgage Name</h3>
-                                    </div>
-                            </div>
-                        </td>
-                        <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">{{ "${:,.0f}".format(m.remaining_principal) }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Remaining Principal</h3>
-                            </div>
-                        </div>
-                        </td>
-                        
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ m.remaining_term|string + " months" }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Remaining Term</h3>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-            <td>
-                <table>
-                {% if a is not none %}
+    </div>
+    {% else %}
+    {# Mortgage cards grid #}
+    <div class="space-y-8">
+        {% for ma in mortgage_alerts %}
+        {% set mortgage = ma[0] %}
+        {% set alert = ma[1] %}
+        {% set status_graph = ma[2] %}
+        {% set time_graph = ma[3] %}
+        {% set break_even = ma[4] %}
 
-                        <td>
-                            <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                                <div class="md:p-7 p-4">
-                                    <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.alert_type }}</h2>
-                                    <h3 class="text-sm  text-gray-400  text-center">Alert Type</h3>
-                                </div>
-                            </div>
-                        </td>
-                {% if a.alert_type == "Monthly Payment" %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Target Monthly Payment</h3>
-                            </div>
-                        </div>
-                    </td>
-                {% elif a.alert_type == "Interest Rate" %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.target_interest_rate }}%</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Target Interest Rate:</h3>
-                            </div>
-                        </div>
-                    </td>
-              {% endif %}
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Trigger Status</h3>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">Last Trigger Date</h3>
-                            </div>
-                        </div>
-                    </td>
-              {% else %}
-                    <a href="{{url_for('mortgage_bp.addalert', m_id=m.id)}}">
-                    <div class="bg-gradient-to-r flex-auto w-42 h-42  from-green-900 to-green-800    shadow-lg    rounded-lg">
-                            <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">+ Click to set an alert</h2>
-                                <h3 class="text-sm  text-gray-400  text-center">No Alerts Found</h3>
-                            </div>
-                        </div>
-                    </a>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {# MortgageCard Component #}
+            <div class="lg:col-span-1">
+                {% include 'components/mortgage_card.jinja2' %}
+            </div>
 
-              {% endif %}
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-            {% if status_graph %}
-                {{ status_graph|safe }}
-            {% endif %}
-            </td>
-            <td>
-            {% if time_graph %}
-                {{ time_graph|safe }}
-            {% endif %}
-            </td>
-        </tr>
-    </tr>
-    <tr>
-        <td class="bg-green-600 h-0.5"></td>
-        <td class="bg-green-600 h-0.5"></td>
-    </tr>
-    {% endfor %}
+            {# Graphs Section #}
+            <div class="lg:col-span-1 space-y-4">
+                {% if status_graph %}
+                <div class="bg-gray-800 rounded-lg shadow-lg p-4">
+                    {{ status_graph|safe }}
+                </div>
+                {% endif %}
+                {% if time_graph %}
+                <div class="bg-gray-800 rounded-lg shadow-lg p-4">
+                    {{ time_graph|safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Divider between mortgages #}
+        {% if not loop.last %}
+        <div class="border-t border-green-600 my-8"></div>
+        {% endif %}
+        {% endfor %}
+
+        {# Add another mortgage button #}
+        <div class="mt-8">
+            <a href="{{url_for('mortgage_bp.addmortgage')}}"
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-green-300 bg-green-900/50 border border-green-700 rounded-md hover:bg-green-800/50 transition-colors">
+                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Another Mortgage
+            </a>
+        </div>
+    </div>
     {% endif %}
-
-    </table>
+</div>
 {% endblock %}
