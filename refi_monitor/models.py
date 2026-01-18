@@ -106,6 +106,7 @@ class Subscription(db.Model):
     initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True, default=False)
     payment_status = db.Column(db.String, index=True, unique=False, nullable=True, default='incomplete')
     paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    paused_reason = db.Column(db.String(50), index=False, unique=False, nullable=True)
 
     # Billing period tracking
     initial_period_start = db.Column(db.Integer, index=False, unique=False, nullable=True)
@@ -125,6 +126,26 @@ class Subscription(db.Model):
 
     def __repr__(self):
         return '<Subscription {} for alert {}: {}>'.format(self.id, self.alert_id, self.payment_status)
+
+    def pause(self, reason='user_requested'):
+        """Pause the subscription without canceling Stripe billing.
+
+        Args:
+            reason: The reason for pausing ('user_requested', 'payment_failed')
+        """
+        self.paused_at = datetime.utcnow()
+        self.paused_reason = reason
+        self.updated_on = datetime.utcnow()
+
+    def resume(self):
+        """Resume a paused subscription."""
+        self.paused_at = None
+        self.paused_reason = None
+        self.updated_on = datetime.utcnow()
+
+    def is_paused(self):
+        """Check if subscription is currently paused."""
+        return self.paused_at is not None
 
 
 class Alert(db.Model):
@@ -182,7 +203,11 @@ class Alert(db.Model):
 
         Returns one of: 'active', 'paused', 'triggered', 'waiting'
         """
-        # Check for payment failure first
+        # Check for user-initiated pause first (highest priority)
+        if self.paused_at is not None:
+            return 'paused'
+
+        # Check for payment failure
         if self.payment_status == 'payment_failed':
             return 'paused'
 

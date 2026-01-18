@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 from datetime import datetime
 from . import db
-from .models import User, Mortgage, Alert, MortgageRate
+from .models import User, Mortgage, Alert, MortgageRate, Subscription
 from .calc import calc_loan_monthly_payment
 
 
@@ -41,6 +41,9 @@ def alert_to_dict(alert):
         'estimate_refinance_cost': alert.estimate_refinance_cost,
         'calculated_refinance_cost': alert.calculated_refinance_cost,
         'payment_status': alert.payment_status,
+        'status': alert.get_status(),
+        'paused_at': alert.paused_at.isoformat() if alert.paused_at else None,
+        'paused_reason': alert.subscription.paused_reason if alert.subscription else None,
         'created_on': alert.created_on.isoformat() if alert.created_on else None,
         'updated_on': alert.updated_on.isoformat() if alert.updated_on else None,
     }
@@ -250,6 +253,73 @@ def delete_alert(alert_id):
     db.session.delete(alert)
     db.session.commit()
     return jsonify({'message': 'Alert deleted successfully'})
+
+
+@api_bp.route('/alerts/<int:alert_id>/pause', methods=['POST'])
+@login_required
+def pause_alert(alert_id):
+    """Pause an alert without canceling the Stripe subscription.
+
+    The alert will stop being monitored but the subscription remains active.
+    This allows users to temporarily disable alerts without losing their
+    subscription billing cycle.
+    """
+    alert = Alert.query.filter_by(id=alert_id).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if not alert.subscription:
+        return jsonify({'error': 'Alert has no subscription'}), 400
+
+    if alert.subscription.is_paused():
+        return jsonify({'error': 'Alert is already paused'}), 400
+
+    alert.subscription.pause(reason='user_requested')
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Alert paused successfully',
+        'alert': alert_to_dict(alert)
+    })
+
+
+@api_bp.route('/alerts/<int:alert_id>/resume', methods=['POST'])
+@login_required
+def resume_alert(alert_id):
+    """Resume a paused alert.
+
+    The alert will start being monitored again. Only works for alerts
+    paused by user request, not for payment failures.
+    """
+    alert = Alert.query.filter_by(id=alert_id).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if not alert.subscription:
+        return jsonify({'error': 'Alert has no subscription'}), 400
+
+    if not alert.subscription.is_paused():
+        return jsonify({'error': 'Alert is not paused'}), 400
+
+    # Only allow resuming user-requested pauses, not payment failures
+    if alert.subscription.paused_reason == 'payment_failed':
+        return jsonify({'error': 'Cannot resume alert with payment failure. Please update payment method.'}), 400
+
+    alert.subscription.resume()
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Alert resumed successfully',
+        'alert': alert_to_dict(alert)
+    })
 
 
 # ============ User Endpoints ============
