@@ -33,6 +33,7 @@ def init_app():
         from . import auth
         from . import mortgage
         from . import api
+        from . import admin
         from .assets import compile_static_assets
         from .models import User, Mortgage, Mortgage_Tracking, Alert, Trigger
 
@@ -47,6 +48,7 @@ def init_app():
         app.register_blueprint(auth.auth_bp)
         app.register_blueprint(mortgage.mortgage_bp)
         app.register_blueprint(api.api_bp)
+        app.register_blueprint(admin.admin_bp)
 
         # Exempt API endpoints from CSRF protection (uses token-based auth)
         csrf.exempt(api.api_bp)
