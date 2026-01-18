@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useKpiMetrics } from '../api';
 
 /**
  * Individual metric card component displaying a single KPI value.
@@ -49,6 +50,14 @@ function ScoreBadge({ score, label }) {
   );
 }
 
+const defaultMetrics = {
+  market_rate_display: '--',
+  your_rate_display: '--',
+  monthly_savings_display: '--',
+  refi_score: null,
+  refi_score_label: 'N/A'
+};
+
 /**
  * MetricCards component displaying KPI dashboard cards for:
  * - Market Rate: Current market mortgage rate
@@ -61,43 +70,10 @@ function ScoreBadge({ score, label }) {
  * @param {Object} props.initialData - Optional initial data to display before fetch
  */
 function MetricCards({ mortgageId, initialData }) {
-  const [metrics, setMetrics] = useState(initialData || {
-    market_rate_display: '--',
-    your_rate_display: '--',
-    monthly_savings_display: '--',
-    refi_score: null,
-    refi_score_label: 'N/A'
-  });
-  const [loading, setLoading] = useState(!initialData);
-  const [error, setError] = useState(null);
+  const { data, isLoading, error } = useKpiMetrics(mortgageId);
+  const metrics = data || initialData || defaultMetrics;
 
-  useEffect(() => {
-    async function fetchMetrics() {
-      try {
-        setLoading(true);
-        const url = mortgageId
-          ? `/api/kpi-metrics?mortgage_id=${mortgageId}`
-          : '/api/kpi-metrics';
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Failed to fetch metrics');
-        }
-        const data = await response.json();
-        setMetrics(data);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (!initialData) {
-      fetchMetrics();
-    }
-  }, [mortgageId, initialData]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
@@ -115,7 +91,7 @@ function MetricCards({ mortgageId, initialData }) {
   if (error) {
     return (
       <div className="bg-red-900 text-red-200 p-4 rounded-lg">
-        Error loading metrics: {error}
+        Error loading metrics: {error.message}
       </div>
     );
   }
