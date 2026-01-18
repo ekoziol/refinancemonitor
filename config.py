@@ -60,3 +60,19 @@ class DevConfig(Config):
     DATABASE_URI = environ.get('DEV_DATABASE_URI')
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+
+class TestConfig(Config):
+    """Testing configuration."""
+    FLASK_ENV = 'testing'
+    DEBUG = True
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = environ.get(
+        'TEST_DATABASE_URI',
+        'sqlite:///:memory:'
+    )
+    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WTF_CSRF_ENABLED = False
+    ENABLE_SCHEDULER = False
+    SERVER_NAME = 'localhost.localdomain'
