@@ -184,6 +184,13 @@ def get_alert(alert_id):
 @login_required
 def create_alert():
     """Create a new alert."""
+    # Block unverified users from creating alerts
+    if not current_user.email_verified:
+        return jsonify({
+            'error': 'Email verification required',
+            'message': 'Please verify your email address before creating alerts.'
+        }), 403
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400

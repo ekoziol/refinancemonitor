@@ -7,7 +7,7 @@ from datetime import datetime
 from . import db
 from .models import Alert, Trigger, Mortgage, User, Subscription
 from .calc import calc_loan_monthly_payment
-from .notifications import send_alert_notification, send_monthly_report_email
+from .notifications import send_alert_notification, send_monthly_report_email, send_verification_reminder_email
 from .rate_updater import RateUpdater
 from .report_aggregator import ReportDataAggregationService
 
@@ -80,6 +80,69 @@ def scheduled_monthly_report():
             )
         except Exception as e:
             logger.error(f"Scheduled monthly report failed: {e}")
+            logger.exception("Full traceback:")
+
+
+def scheduled_verification_reminders():
+    """
+    Scheduled task function that sends verification reminder emails to unverified users.
+
+    This function is called by APScheduler daily.
+    It sends reminders to users who:
+    - Have not verified their email
+    - Registered more than 24 hours ago
+    - Haven't received a verification_reminder email in the last 3 days
+    """
+    from . import init_app
+    from datetime import timedelta
+    from .models import EmailLog
+
+    # Create app context for database access
+    app = init_app()
+    with app.app_context():
+        logger.info("Running scheduled verification reminders...")
+        try:
+            now = datetime.utcnow()
+            day_ago = now - timedelta(hours=24)
+            three_days_ago = now - timedelta(days=3)
+
+            # Get unverified users who registered more than 24 hours ago
+            unverified_users = User.query.filter(
+                User.email_verified == False,
+                User.created_on <= day_ago
+            ).all()
+
+            logger.info(f"Found {len(unverified_users)} unverified users")
+
+            sent_count = 0
+            skipped_count = 0
+
+            for user in unverified_users:
+                # Check if we've sent a reminder in the last 3 days
+                recent_reminder = EmailLog.query.filter(
+                    EmailLog.recipient_user_id == user.id,
+                    EmailLog.email_type == 'verification_reminder',
+                    EmailLog.status == 'sent',
+                    EmailLog.created_on >= three_days_ago
+                ).first()
+
+                if recent_reminder:
+                    skipped_count += 1
+                    continue
+
+                # Send reminder
+                try:
+                    if send_verification_reminder_email(user.id):
+                        sent_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to send reminder to user {user.id}: {e}")
+
+            logger.info(
+                f"Verification reminder job complete: "
+                f"sent={sent_count}, skipped={skipped_count}"
+            )
+        except Exception as e:
+            logger.error(f"Scheduled verification reminders failed: {e}")
             logger.exception("Full traceback:")
 
 
@@ -285,6 +348,19 @@ def init_scheduler(app: Flask):
         replace_existing=True
     )
 
+    # Schedule daily verification reminder emails at 10 AM EST
+    scheduler.add_job(
+        func=scheduled_verification_reminders,
+        trigger=CronTrigger(
+            hour=10,
+            minute=0,
+            timezone='America/New_York'
+        ),
+        id='verification_reminders',
+        name='Send verification reminder emails',
+        replace_existing=True
+    )
+
     # Start the scheduler
     scheduler.start()
     logger.info(
@@ -293,6 +369,7 @@ def init_scheduler(app: Flask):
     )
     logger.info(f"Alert checks scheduled: daily at 9 AM and every 4 hours")
     logger.info("Monthly reports scheduled: 1st of each month at 8 AM EST")
+    logger.info("Verification reminders scheduled: daily at 10 AM EST")
 
     # Shutdown scheduler when app terminates
     import atexit

@@ -681,6 +681,155 @@ Questions? Contact us or log in to create a new alert.
         return False
 
 
+def send_verification_reminder_email(user_id):
+    """
+    Send verification reminder email to unverified user.
+
+    Args:
+        user_id: ID of the unverified User record
+
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    user = User.query.get(user_id)
+    if not user:
+        current_app.logger.error(f"User {user_id} not found")
+        return False
+
+    if user.email_verified:
+        current_app.logger.info(f"User {user_id} already verified, skipping reminder")
+        return False
+
+    try:
+        # Generate a fresh verification token
+        token = user.generate_verification_token()
+        db.session.commit()
+
+        verification_url = url_for(
+            'auth_bp.verify_email',
+            token=token,
+            _external=True
+        )
+
+        subject = "RefiAlert: Don't Forget to Verify Your Email"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .btn { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                .reminder-box { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                .benefits { background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📧 Verification Reminder</h1>
+                </div>
+                <div class="content">
+                    <h2>Hi {{ user_name }},</h2>
+                    <p>We noticed you haven't verified your email address yet. Verify now to unlock all RefiAlert features!</p>
+
+                    <div class="reminder-box">
+                        <strong>Why verify?</strong>
+                        <p>Without email verification, you won't be able to create mortgage refinance alerts.</p>
+                    </div>
+
+                    <div class="benefits">
+                        <h3>Once verified, you can:</h3>
+                        <ul>
+                            <li>Create personalized refinance alerts</li>
+                            <li>Get notified when rates drop</li>
+                            <li>Track potential savings opportunities</li>
+                            <li>Receive monthly refinancing reports</li>
+                        </ul>
+                    </div>
+
+                    <p style="text-align: center;">
+                        <a href="{{ verification_url }}" class="btn">Verify Email Now</a>
+                    </p>
+
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all; background-color: #eee; padding: 10px; border-radius: 4px;">{{ verification_url }}</p>
+
+                    <p style="font-size: 12px; color: #666;">This link will expire in 24 hours.</p>
+                </div>
+                <div class="footer">
+                    <p>This reminder was sent by RefiAlert. If you no longer wish to use our service, you can ignore this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=user.name,
+        verification_url=verification_url
+        )
+
+        text_body = f"""
+Verification Reminder
+
+Hi {user.name},
+
+We noticed you haven't verified your email address yet. Verify now to unlock all RefiAlert features!
+
+Why verify?
+Without email verification, you won't be able to create mortgage refinance alerts.
+
+Once verified, you can:
+- Create personalized refinance alerts
+- Get notified when rates drop
+- Track potential savings opportunities
+- Receive monthly refinancing reports
+
+Click here to verify: {verification_url}
+
+Note: This link will expire in 24 hours.
+
+---
+This reminder was sent by RefiAlert.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=text_body,
+            html=html_body
+        )
+
+        # Log the email before sending
+        email_log = log_email(
+            email_type='verification_reminder',
+            recipient_email=user.email,
+            subject=subject,
+            recipient_user_id=user.id,
+            related_entity_type='user',
+            related_entity_id=user.id
+        )
+
+        mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
+        current_app.logger.info(f"Verification reminder sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification reminder to {user.email}: {str(e)}")
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return False
+
+
 def send_monthly_report_email(report_data: 'ReportData'):
     """
     Send monthly refinancing report email to user.

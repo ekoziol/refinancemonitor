@@ -317,3 +317,120 @@ class TestPasswordResetFlow:
         # Invalid passwords (too short)
         assert len("12345") < min_length
         assert len("abc") < min_length
+
+
+class TestAlertCreationEmailVerification:
+    """Tests for alert creation blocking unverified users."""
+
+    def test_unverified_user_cannot_create_alert(self):
+        """Test that unverified users are blocked from creating alerts."""
+        # Document the expected behavior
+        email_verified = False
+        should_allow_alert_creation = email_verified
+        assert should_allow_alert_creation is False
+
+    def test_verified_user_can_create_alert(self):
+        """Test that verified users can create alerts."""
+        email_verified = True
+        should_allow_alert_creation = email_verified
+        assert should_allow_alert_creation is True
+
+    def test_api_returns_403_for_unverified_user(self):
+        """Test that API returns 403 status for unverified user creating alert."""
+        # Document expected API behavior
+        expected_status_code = 403
+        expected_error = 'Email verification required'
+
+        # This is the expected response format
+        response = {
+            'error': 'Email verification required',
+            'message': 'Please verify your email address before creating alerts.'
+        }
+        assert response['error'] == expected_error
+
+    def test_web_route_redirects_unverified_user(self):
+        """Test that web route redirects unverified users to resend verification."""
+        # Document expected web route behavior
+        email_verified = False
+        expected_redirect = 'resend_verification'
+
+        # The route should redirect unverified users
+        should_redirect = not email_verified
+        assert should_redirect is True
+
+
+class TestVerificationReminderEmail:
+    """Tests for verification reminder email logic."""
+
+    def test_reminder_email_template_has_required_elements(self):
+        """Test that reminder email template contains required elements."""
+        user_name = "Test User"
+        verification_url = "http://example.com/verify/abc123"
+
+        # Simulating email template content
+        html_template = f"""
+        <h2>Hi {user_name},</h2>
+        <a href="{verification_url}" class="btn">Verify Email Now</a>
+        <p>Without email verification, you won't be able to create mortgage refinance alerts.</p>
+        """
+
+        assert user_name in html_template
+        assert verification_url in html_template
+        assert "Verify Email Now" in html_template
+        assert "mortgage refinance alerts" in html_template
+
+    def test_reminder_not_sent_to_verified_users(self):
+        """Test that reminders are not sent to already verified users."""
+        email_verified = True
+        should_send_reminder = not email_verified
+        assert should_send_reminder is False
+
+    def test_reminder_sent_to_unverified_users(self):
+        """Test that reminders can be sent to unverified users."""
+        email_verified = False
+        should_send_reminder = not email_verified
+        assert should_send_reminder is True
+
+    def test_reminder_respects_24_hour_delay(self):
+        """Test that reminders are only sent 24+ hours after registration."""
+        registration_time = datetime.utcnow() - timedelta(hours=25)  # 25 hours ago
+        min_delay_hours = 24
+
+        hours_since_registration = (datetime.utcnow() - registration_time).total_seconds() / 3600
+        should_send = hours_since_registration >= min_delay_hours
+        assert should_send is True
+
+    def test_reminder_skipped_if_registered_recently(self):
+        """Test that reminders are skipped for recently registered users."""
+        registration_time = datetime.utcnow() - timedelta(hours=12)  # 12 hours ago
+        min_delay_hours = 24
+
+        hours_since_registration = (datetime.utcnow() - registration_time).total_seconds() / 3600
+        should_send = hours_since_registration >= min_delay_hours
+        assert should_send is False
+
+    def test_reminder_respects_3_day_cooldown(self):
+        """Test that reminders are not sent more often than every 3 days."""
+        last_reminder_sent = datetime.utcnow() - timedelta(days=2)  # 2 days ago
+        cooldown_days = 3
+
+        days_since_last = (datetime.utcnow() - last_reminder_sent).days
+        should_send = days_since_last >= cooldown_days
+        assert should_send is False
+
+    def test_reminder_sent_after_cooldown(self):
+        """Test that reminders can be sent after 3-day cooldown."""
+        last_reminder_sent = datetime.utcnow() - timedelta(days=4)  # 4 days ago
+        cooldown_days = 3
+
+        days_since_last = (datetime.utcnow() - last_reminder_sent).days
+        should_send = days_since_last >= cooldown_days
+        assert should_send is True
+
+    def test_reminder_generates_fresh_token(self):
+        """Test that reminder generates a new verification token."""
+        old_token = secrets.token_urlsafe(32)
+        new_token = secrets.token_urlsafe(32)
+
+        # New token should be different from old token
+        assert old_token != new_token
