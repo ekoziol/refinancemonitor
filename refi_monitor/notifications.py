@@ -180,6 +180,110 @@ To manage your alerts or update your preferences, please log in to your account.
         return False
 
 
+def send_verification_email(user):
+    """
+    Send email verification link to user after signup.
+
+    Args:
+        user: User object with email_verification_token set
+    """
+    try:
+        # Generate the verification URL
+        verification_url = f"{current_app.config.get('BASE_URL', 'http://localhost:5000')}/verify-email/{user.email_verification_token}"
+
+        subject = "RefiAlert: Please Verify Your Email"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .verify-box { background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; text-align: center; }
+                .btn { display: inline-block; padding: 15px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 15px 0; font-size: 16px; font-weight: bold; }
+                .btn:hover { background-color: #45a049; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                .link-fallback { word-break: break-all; font-size: 12px; color: #666; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🏠 Welcome to RefiAlert!</h1>
+                </div>
+                <div class="content">
+                    <h2>Hi {{ user_name }},</h2>
+                    <p>Thank you for signing up for RefiAlert! Please verify your email address to activate your account and start tracking refinancing opportunities.</p>
+
+                    <div class="verify-box">
+                        <p><strong>Click the button below to verify your email:</strong></p>
+                        <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+                        <p class="link-fallback">Or copy this link: {{ verification_url }}</p>
+                    </div>
+
+                    <p><strong>Why verify?</strong></p>
+                    <ul>
+                        <li>Create and manage refinancing alerts</li>
+                        <li>Receive timely notifications when opportunities arise</li>
+                        <li>Keep your account secure</li>
+                    </ul>
+
+                    <p><strong>Note:</strong> This verification link will expire in 24 hours.</p>
+
+                    <p>If you didn't create an account with RefiAlert, you can safely ignore this email.</p>
+                </div>
+                <div class="footer">
+                    <p>Questions? Contact us at support@refialert.com</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=user.name,
+        verification_url=verification_url
+        )
+
+        text_body = f"""
+Welcome to RefiAlert!
+
+Hi {user.name},
+
+Thank you for signing up for RefiAlert! Please verify your email address to activate your account and start tracking refinancing opportunities.
+
+Click the link below to verify your email:
+{verification_url}
+
+Why verify?
+- Create and manage refinancing alerts
+- Receive timely notifications when opportunities arise
+- Keep your account secure
+
+Note: This verification link will expire in 24 hours.
+
+If you didn't create an account with RefiAlert, you can safely ignore this email.
+
+Questions? Contact us at support@refialert.com
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=text_body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Verification email sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        return False
+
+
 def send_payment_confirmation(user_email, alert_id, payment_status):
     """
     Send payment confirmation email to user.

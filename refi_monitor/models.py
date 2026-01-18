@@ -1,6 +1,8 @@
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+from datetime import datetime, timedelta
 
 
 class User(UserMixin, db.Model):
@@ -19,7 +21,13 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), unique=True, nullable=True)
+    email_verification_sent_at = db.Column(db.DateTime, nullable=True)
     mortgages = db.relationship("Mortgage")
+
+    # Token expiry duration (24 hours)
+    VERIFICATION_TOKEN_EXPIRY_HOURS = 24
 
     def set_password(self, password):
         """Create hashed password."""
@@ -28,6 +36,27 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+
+    def generate_verification_token(self):
+        """Generate a secure email verification token."""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.email_verification_sent_at = datetime.utcnow()
+        return self.email_verification_token
+
+    def is_verification_token_valid(self):
+        """Check if the verification token is still valid (not expired)."""
+        if not self.email_verification_sent_at:
+            return False
+        expiry_time = self.email_verification_sent_at + timedelta(
+            hours=self.VERIFICATION_TOKEN_EXPIRY_HOURS
+        )
+        return datetime.utcnow() < expiry_time
+
+    def verify_email(self):
+        """Mark email as verified and clear the token."""
+        self.email_verified = True
+        self.email_verification_token = None
+        self.email_verification_sent_at = None
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
