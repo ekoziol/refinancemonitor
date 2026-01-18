@@ -1,4 +1,5 @@
 export { default as ChartWrapper } from './ChartWrapper';
+export { default as MetricCards } from './MetricCards';
 
 // UI Primitives (shadcn/ui)
 export {
