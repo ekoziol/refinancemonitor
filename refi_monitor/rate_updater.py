@@ -160,6 +160,7 @@ class RateUpdater:
                         alert_trigger_status=1,  # Success
                         alert_trigger_reason=f"Rate {current_rate:.4f} met target {alert.target_interest_rate:.4f}",
                         alert_trigger_date=datetime.utcnow(),
+                        triggered_rate=current_rate,
                         created_on=datetime.utcnow(),
                         updated_on=datetime.utcnow()
                     )
