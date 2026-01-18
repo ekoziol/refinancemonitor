@@ -1,5 +1,7 @@
 export { default as ChartWrapper } from './ChartWrapper';
 export { default as MetricCards } from './MetricCards';
+export { default as SavingsImpactChart } from './SavingsImpactChart';
+export { default as TimelineVisualization } from './TimelineVisualization';
 
 // UI Primitives (shadcn/ui)
 export {
