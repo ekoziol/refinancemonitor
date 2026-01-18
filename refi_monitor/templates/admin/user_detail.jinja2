@@ -1,0 +1,248 @@
+{% extends "admin/admin_layout.jinja2" %}
+
+{% block pagecontent %}
+<div class="ml-72 p-8">
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">User Details</h1>
+        <a href="{{ url_for('admin_bp.users') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">
+            Back to Users
+        </a>
+    </div>
+
+    <!-- User Profile Card -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Profile Information</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Name</p>
+                <p class="text-lg font-medium text-gray-800">{{ user.name }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Email</p>
+                <p class="text-lg font-medium text-gray-800">{{ user.email }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Email Verified</p>
+                <p class="text-lg font-medium {% if user.email_verified %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ 'Yes' if user.email_verified else 'No' }}
+                </p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Credit Score</p>
+                <p class="text-lg font-medium text-gray-800">{{ user.credit_score or 'Not set' }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Created</p>
+                <p class="text-lg font-medium text-gray-800">{{ user.created_on.strftime('%Y-%m-%d') if user.created_on else 'N/A' }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Last Login</p>
+                <p class="text-lg font-medium text-gray-800">{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">User ID</p>
+                <p class="text-lg font-medium text-gray-800">#{{ user.id }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500">Paid Status</p>
+                <p class="text-lg font-medium {% if user.paid %}text-green-600{% else %}text-gray-600{% endif %}">
+                    {{ 'Paid' if user.paid else 'Free' }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mortgages Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Mortgages ({{ mortgages|length }})</h2>
+        {% if mortgages %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zip Code</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Original Principal</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remaining Principal</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Interest Rate</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remaining Term</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for mortgage in mortgages %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900">#{{ mortgage.id }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-medium">{{ mortgage.name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ mortgage.zip_code }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${{ "{:,.2f}".format(mortgage.original_principal) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${{ "{:,.2f}".format(mortgage.remaining_principal) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ "%.2f"|format(mortgage.original_interest_rate) }}%</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ mortgage.remaining_term }} months</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ mortgage.created_on.strftime('%Y-%m-%d') if mortgage.created_on else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No mortgages found for this user.</p>
+        {% endif %}
+    </div>
+
+    <!-- Alerts & Subscriptions Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Alerts & Subscriptions ({{ alert_details|length }})</h2>
+        {% if alert_details %}
+        <div class="space-y-4">
+            {% for detail in alert_details %}
+            {% set alert = detail.alert %}
+            {% set subscription = detail.subscription %}
+            {% set mortgage = detail.mortgage %}
+            <div class="border rounded-lg p-4 {% if alert.deleted_at %}bg-red-50 border-red-200{% elif detail.status == 'active' %}bg-green-50 border-green-200{% elif detail.status == 'paused' %}bg-yellow-50 border-yellow-200{% else %}bg-gray-50 border-gray-200{% endif %}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="text-lg font-medium text-gray-800">Alert #{{ alert.id }}</span>
+                        <span class="ml-2 px-2 py-1 text-xs rounded-full {% if alert.deleted_at %}bg-red-200 text-red-800{% elif detail.status == 'active' %}bg-green-200 text-green-800{% elif detail.status == 'triggered' %}bg-blue-200 text-blue-800{% elif detail.status == 'paused' %}bg-yellow-200 text-yellow-800{% else %}bg-gray-200 text-gray-800{% endif %}">
+                            {% if alert.deleted_at %}Deleted{% else %}{{ detail.status|capitalize }}{% endif %}
+                        </span>
+                    </div>
+                    <span class="text-sm text-gray-500">Mortgage: {{ mortgage.name if mortgage else 'N/A' }}</span>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                    <div>
+                        <p class="text-xs text-gray-500">Alert Type</p>
+                        <p class="text-sm font-medium text-gray-800">{{ alert.alert_type }}</p>
+                    </div>
+                    {% if alert.target_monthly_payment %}
+                    <div>
+                        <p class="text-xs text-gray-500">Target Monthly Payment</p>
+                        <p class="text-sm font-medium text-gray-800">${{ "{:,.2f}".format(alert.target_monthly_payment) }}</p>
+                    </div>
+                    {% endif %}
+                    {% if alert.target_interest_rate %}
+                    <div>
+                        <p class="text-xs text-gray-500">Target Interest Rate</p>
+                        <p class="text-sm font-medium text-gray-800">{{ "%.2f"|format(alert.target_interest_rate) }}%</p>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="text-xs text-gray-500">Target Term</p>
+                        <p class="text-sm font-medium text-gray-800">{{ alert.target_term }} months</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Created</p>
+                        <p class="text-sm font-medium text-gray-800">{{ alert.created_on.strftime('%Y-%m-%d') if alert.created_on else 'N/A' }}</p>
+                    </div>
+                </div>
+
+                {% if subscription %}
+                <div class="border-t pt-3 mt-3">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Subscription Details</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <p class="text-xs text-gray-500">Payment Status</p>
+                            <p class="text-sm font-medium {% if subscription.payment_status == 'active' %}text-green-600{% elif subscription.payment_status == 'payment_failed' %}text-red-600{% else %}text-gray-600{% endif %}">
+                                {{ subscription.payment_status or 'N/A' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Initial Payment</p>
+                            <p class="text-sm font-medium {% if subscription.initial_payment %}text-green-600{% else %}text-gray-600{% endif %}">
+                                {{ 'Yes' if subscription.initial_payment else 'No' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Stripe Customer ID</p>
+                            <p class="text-sm font-medium text-gray-800 truncate" title="{{ subscription.stripe_customer_id }}">
+                                {{ subscription.stripe_customer_id[:20] + '...' if subscription.stripe_customer_id and subscription.stripe_customer_id|length > 20 else subscription.stripe_customer_id or 'N/A' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Stripe Subscription ID</p>
+                            <p class="text-sm font-medium text-gray-800 truncate" title="{{ subscription.stripe_subscription_id }}">
+                                {{ subscription.stripe_subscription_id[:20] + '...' if subscription.stripe_subscription_id and subscription.stripe_subscription_id|length > 20 else subscription.stripe_subscription_id or 'N/A' }}
+                            </p>
+                        </div>
+                        {% if subscription.paused_at %}
+                        <div>
+                            <p class="text-xs text-gray-500">Paused At</p>
+                            <p class="text-sm font-medium text-yellow-600">{{ subscription.paused_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if detail.recent_triggers %}
+                <div class="border-t pt-3 mt-3">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Recent Triggers</p>
+                    <div class="space-y-1">
+                        {% for trigger in detail.recent_triggers %}
+                        <div class="flex justify-between items-center text-sm bg-gray-100 rounded px-2 py-1">
+                            <span class="{% if trigger.alert_trigger_status == 1 %}text-green-600{% else %}text-gray-600{% endif %}">
+                                {{ 'Triggered' if trigger.alert_trigger_status == 1 else 'Not Triggered' }}
+                            </span>
+                            <span class="text-gray-600">{{ trigger.alert_trigger_reason[:50] }}{% if trigger.alert_trigger_reason|length > 50 %}...{% endif %}</span>
+                            <span class="text-gray-500">{{ trigger.created_on.strftime('%Y-%m-%d %H:%M') if trigger.created_on else 'N/A' }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No alerts found for this user.</p>
+        {% endif %}
+    </div>
+
+    <!-- Email Logs Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Recent Email Logs ({{ email_logs|length }})</h2>
+        {% if email_logs %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Related Entity</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for log in email_logs %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ log.created_on.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">{{ log.email_type }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ log.subject[:40] }}{% if log.subject|length > 40 %}...{% endif %}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 text-xs rounded-full {% if log.status == 'sent' or log.status == 'delivered' %}bg-green-100 text-green-800{% elif log.status == 'failed' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ log.status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {% if log.related_entity_type %}
+                            {{ log.related_entity_type }} #{{ log.related_entity_id }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No email logs found for this user.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
