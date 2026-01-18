@@ -1,3 +1,6 @@
+import secrets
+from datetime import datetime, timedelta
+
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,6 +22,9 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(100), unique=True, nullable=True)
+    email_token_expiry = db.Column(db.DateTime, nullable=True)
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):
@@ -28,6 +34,28 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+
+    def generate_verification_token(self, expiry_hours=24):
+        """Generate a secure email verification token."""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.email_token_expiry = datetime.utcnow() + timedelta(hours=expiry_hours)
+        return self.email_verification_token
+
+    def verify_email_token(self, token):
+        """Verify the email token and mark email as verified."""
+        if (self.email_verification_token == token and
+                self.email_token_expiry and
+                datetime.utcnow() < self.email_token_expiry):
+            self.email_verified = True
+            self.email_verification_token = None
+            self.email_token_expiry = None
+            return True
+        return False
+
+    def clear_verification_token(self):
+        """Clear the verification token."""
+        self.email_verification_token = None
+        self.email_token_expiry = None
 
     def __repr__(self):
         return '<User {}>'.format(self.email)

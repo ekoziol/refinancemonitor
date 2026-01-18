@@ -1,0 +1,63 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='dist/img/logo.png') }}"
+        alt="logo"
+      />
+    </div>
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-warning">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert">
+          x
+        </button>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    <h1>Verify Your Email</h1>
+
+    <div class="verification-content">
+      <p>We've sent a verification email to your inbox. Please check your email and click the verification link to activate your account.</p>
+
+      <p><strong>Didn't receive the email?</strong></p>
+      <ul>
+        <li>Check your spam or junk folder</li>
+        <li>Make sure you entered the correct email address</li>
+        <li>Request a new verification email below</li>
+      </ul>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth_bp.resend_verification') }}">
+      <fieldset class="form-field email">
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          placeholder="youremail@example.com"
+          required
+        />
+      </fieldset>
+
+      <div class="submit-button">
+        <button type="submit" class="btn btn-primary">Resend Verification Email</button>
+      </div>
+    </form>
+
+    <div class="login-signup">
+      <div>
+        <span>Already verified?</span>
+        <a href="{{ url_for('auth_bp.login') }}">Log in.</a>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
