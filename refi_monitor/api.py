@@ -1,10 +1,12 @@
 """REST API endpoints for React frontend."""
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
 from . import db
-from .models import User, Mortgage, Alert, MortgageRate
+from .models import User, Mortgage, Alert, MortgageRate, EmailLog, Trigger, Subscription
 from .calc import calc_loan_monthly_payment
+from .scheduler import get_scheduler_status
 
 
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api')
@@ -695,3 +697,152 @@ def get_savings_impact():
         'mortgage_id': mortgage.id,
         'mortgage_name': mortgage.name
     })
+
+
+# ============ System Health Endpoints ============
+
+@api_bp.route('/system-health', methods=['GET'])
+@login_required
+def get_system_health():
+    """
+    Get system health metrics for the admin dashboard.
+
+    Returns rate fetch status, email delivery rates, and error logs.
+    """
+    now = datetime.utcnow()
+    day_ago = now - timedelta(hours=24)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+
+    # Rate fetch status from scheduler
+    scheduler_jobs = get_scheduler_status()
+
+    # Email delivery stats
+    email_stats_24h = _get_email_stats(day_ago)
+    email_stats_7d = _get_email_stats(week_ago)
+    email_stats_30d = _get_email_stats(month_ago)
+
+    # Recent errors (failed emails)
+    recent_errors = EmailLog.query.filter(
+        EmailLog.status == 'failed'
+    ).order_by(EmailLog.created_on.desc()).limit(20).all()
+
+    error_logs = [{
+        'id': e.id,
+        'email_type': e.email_type,
+        'recipient': e.recipient_email,
+        'subject': e.subject,
+        'error_message': e.error_message,
+        'created_on': e.created_on.isoformat() if e.created_on else None
+    } for e in recent_errors]
+
+    # Alert statistics
+    alert_stats = _get_alert_stats()
+
+    # Trigger statistics
+    trigger_stats = _get_trigger_stats(day_ago, week_ago, month_ago)
+
+    return jsonify({
+        'scheduler_jobs': scheduler_jobs,
+        'email_stats': {
+            '24h': email_stats_24h,
+            '7d': email_stats_7d,
+            '30d': email_stats_30d
+        },
+        'error_logs': error_logs,
+        'alert_stats': alert_stats,
+        'trigger_stats': trigger_stats,
+        'generated_at': now.isoformat()
+    })
+
+
+def _get_email_stats(since):
+    """Get email statistics since a given datetime."""
+    total = EmailLog.query.filter(EmailLog.created_on >= since).count()
+    sent = EmailLog.query.filter(
+        EmailLog.status == 'sent',
+        EmailLog.created_on >= since
+    ).count()
+    failed = EmailLog.query.filter(
+        EmailLog.status == 'failed',
+        EmailLog.created_on >= since
+    ).count()
+    pending = EmailLog.query.filter(
+        EmailLog.status == 'pending',
+        EmailLog.created_on >= since
+    ).count()
+
+    # By type breakdown
+    by_type = db.session.query(
+        EmailLog.email_type,
+        func.count(EmailLog.id)
+    ).filter(
+        EmailLog.created_on >= since
+    ).group_by(EmailLog.email_type).all()
+
+    success_rate = round((sent / total * 100), 1) if total > 0 else 0
+
+    return {
+        'total': total,
+        'sent': sent,
+        'failed': failed,
+        'pending': pending,
+        'success_rate': success_rate,
+        'by_type': {t: c for t, c in by_type}
+    }
+
+
+def _get_alert_stats():
+    """Get current alert status distribution."""
+    # Total alerts (not deleted)
+    total_alerts = Alert.query.filter(Alert.deleted_at.is_(None)).count()
+
+    # Active (paid, not paused)
+    active_alerts = Alert.query.join(Subscription).filter(
+        Subscription.payment_status == 'active',
+        Alert.deleted_at.is_(None),
+        Subscription.paused_at.is_(None)
+    ).count()
+
+    # Paused
+    paused_alerts = Alert.query.join(Subscription).filter(
+        Alert.deleted_at.is_(None),
+        Subscription.paused_at.isnot(None)
+    ).count()
+
+    # Waiting for payment
+    waiting_alerts = Alert.query.join(Subscription).filter(
+        Alert.deleted_at.is_(None),
+        Subscription.initial_payment == False
+    ).count()
+
+    return {
+        'total': total_alerts,
+        'active': active_alerts,
+        'paused': paused_alerts,
+        'waiting': waiting_alerts
+    }
+
+
+def _get_trigger_stats(day_ago, week_ago, month_ago):
+    """Get trigger statistics for different time periods."""
+    triggers_24h = Trigger.query.filter(
+        Trigger.created_on >= day_ago,
+        Trigger.alert_trigger_status == 1
+    ).count()
+
+    triggers_7d = Trigger.query.filter(
+        Trigger.created_on >= week_ago,
+        Trigger.alert_trigger_status == 1
+    ).count()
+
+    triggers_30d = Trigger.query.filter(
+        Trigger.created_on >= month_ago,
+        Trigger.alert_trigger_status == 1
+    ).count()
+
+    return {
+        '24h': triggers_24h,
+        '7d': triggers_7d,
+        '30d': triggers_30d
+    }
