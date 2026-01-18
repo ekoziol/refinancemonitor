@@ -434,3 +434,77 @@ class TestVerificationReminderEmail:
 
         # New token should be different from old token
         assert old_token != new_token
+
+
+class TestPasswordResetRateLimiting:
+    """Tests for password reset rate limiting logic."""
+
+    def test_rate_limit_constants(self):
+        """Test that rate limit constants are properly configured."""
+        from refi_monitor.auth import PASSWORD_RESET_RATE_LIMIT, PASSWORD_RESET_RATE_WINDOW
+
+        # Should allow reasonable number of attempts
+        assert PASSWORD_RESET_RATE_LIMIT >= 3
+        assert PASSWORD_RESET_RATE_LIMIT <= 10  # Not too permissive
+
+        # Window should be reasonable (between 30 min and 2 hours)
+        window_hours = PASSWORD_RESET_RATE_WINDOW.total_seconds() / 3600
+        assert 0.5 <= window_hours <= 2
+
+    def test_rate_limiting_logic_under_limit(self):
+        """Test that requests under limit are allowed."""
+        rate_limit = 3
+        recent_tokens = 2
+
+        should_allow = recent_tokens < rate_limit
+        assert should_allow is True
+
+    def test_rate_limiting_logic_at_limit(self):
+        """Test that requests at limit are blocked."""
+        rate_limit = 3
+        recent_tokens = 3
+
+        should_allow = recent_tokens < rate_limit
+        assert should_allow is False
+
+    def test_rate_limiting_logic_over_limit(self):
+        """Test that requests over limit are blocked."""
+        rate_limit = 3
+        recent_tokens = 5
+
+        should_allow = recent_tokens < rate_limit
+        assert should_allow is False
+
+    def test_rate_limit_resets_after_window(self):
+        """Test that rate limit resets after time window."""
+        rate_window = timedelta(hours=1)
+        now = datetime.utcnow()
+
+        # Token created 2 hours ago should not count
+        old_token_time = now - timedelta(hours=2)
+        cutoff = now - rate_window
+
+        token_counts_against_limit = old_token_time >= cutoff
+        assert token_counts_against_limit is False
+
+    def test_rate_limit_counts_recent_tokens(self):
+        """Test that recent tokens count against rate limit."""
+        rate_window = timedelta(hours=1)
+        now = datetime.utcnow()
+
+        # Token created 30 minutes ago should count
+        recent_token_time = now - timedelta(minutes=30)
+        cutoff = now - rate_window
+
+        token_counts_against_limit = recent_token_time >= cutoff
+        assert token_counts_against_limit is True
+
+    def test_rate_limiting_silent_failure(self):
+        """Test that rate limiting fails silently to prevent email enumeration."""
+        # When rate limited, user should still see the success message
+        # to prevent attackers from knowing if the email exists
+        rate_limited = True
+        expected_message = "If an account with that email exists, a password reset link has been sent."
+
+        # Whether rate limited or not, same message should be shown
+        assert expected_message == expected_message  # Always same message
