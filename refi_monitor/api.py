@@ -871,3 +871,366 @@ def _get_trigger_stats(day_ago, week_ago, month_ago):
         '7d': triggers_7d,
         '30d': triggers_30d
     }
+
+
+# ============ Rates Endpoints ============
+
+@api_bp.route('/rates/current', methods=['GET'])
+@login_required
+def get_current_rates():
+    """
+    Get current mortgage rates.
+
+    Query params:
+    - zip_code (optional): Filter by zip code. If not provided, uses user's first mortgage zip.
+    - term_months (optional): Filter by term (e.g., 180 for 15-year, 360 for 30-year).
+                              If not provided, returns all available terms.
+
+    Returns:
+    {
+        "rates": [
+            {"term_months": 180, "term_years": 15, "rate": 0.055, "rate_display": "5.50%", "rate_date": "2026-01-18"},
+            {"term_months": 360, "term_years": 30, "rate": 0.0625, "rate_display": "6.25%", "rate_date": "2026-01-18"}
+        ],
+        "zip_code": "12345",
+        "as_of": "2026-01-18T10:00:00"
+    }
+    """
+    zip_code = request.args.get('zip_code')
+    term_months = request.args.get('term_months', type=int)
+
+    # If no zip code, get from user's first mortgage
+    if not zip_code:
+        mortgage = Mortgage.query.filter_by(user_id=current_user.id).first()
+        if mortgage:
+            zip_code = mortgage.zip_code
+        else:
+            return jsonify({
+                'rates': [],
+                'zip_code': None,
+                'as_of': datetime.utcnow().isoformat(),
+                'message': 'No mortgage found to determine zip code'
+            })
+
+    # Build query
+    query = MortgageRate.query.filter_by(zip_code=zip_code)
+    if term_months:
+        query = query.filter_by(term_months=term_months)
+
+    # Get latest rate for each term
+    subquery = db.session.query(
+        MortgageRate.term_months,
+        func.max(MortgageRate.rate_date).label('max_date')
+    ).filter_by(zip_code=zip_code)
+
+    if term_months:
+        subquery = subquery.filter_by(term_months=term_months)
+
+    subquery = subquery.group_by(MortgageRate.term_months).subquery()
+
+    rates = MortgageRate.query.join(
+        subquery,
+        db.and_(
+            MortgageRate.term_months == subquery.c.term_months,
+            MortgageRate.rate_date == subquery.c.max_date,
+            MortgageRate.zip_code == zip_code
+        )
+    ).order_by(MortgageRate.term_months).all()
+
+    rate_list = []
+    for rate in rates:
+        rate_list.append({
+            'term_months': rate.term_months,
+            'term_years': rate.term_months // 12,
+            'rate': rate.rate,
+            'rate_display': f'{rate.rate * 100:.2f}%',
+            'rate_date': rate.rate_date.strftime('%Y-%m-%d') if rate.rate_date else None
+        })
+
+    return jsonify({
+        'rates': rate_list,
+        'zip_code': zip_code,
+        'as_of': datetime.utcnow().isoformat()
+    })
+
+
+@api_bp.route('/rates/history', methods=['GET'])
+@login_required
+def get_rate_history():
+    """
+    Get historical mortgage rate data.
+
+    Query params:
+    - zip_code (optional): Filter by zip code. If not provided, uses user's first mortgage zip.
+    - term_months (required): Loan term in months (e.g., 360 for 30-year).
+    - days (optional): Number of days of history to return (default: 30, max: 365).
+
+    Returns:
+    {
+        "history": [
+            {"date": "2026-01-15", "rate": 0.0625, "rate_display": "6.25%"},
+            {"date": "2026-01-16", "rate": 0.062, "rate_display": "6.20%"},
+            ...
+        ],
+        "statistics": {
+            "current_rate": 0.062,
+            "min_rate": 0.058,
+            "max_rate": 0.065,
+            "avg_rate": 0.061,
+            "change": -0.005,
+            "change_display": "-0.50%",
+            "data_points": 30
+        },
+        "zip_code": "12345",
+        "term_months": 360
+    }
+    """
+    zip_code = request.args.get('zip_code')
+    term_months = request.args.get('term_months', type=int)
+    days = request.args.get('days', default=30, type=int)
+
+    # Validate days
+    days = min(max(1, days), 365)
+
+    # If no zip code, get from user's first mortgage
+    if not zip_code:
+        mortgage = Mortgage.query.filter_by(user_id=current_user.id).first()
+        if mortgage:
+            zip_code = mortgage.zip_code
+        else:
+            return jsonify({
+                'history': [],
+                'statistics': None,
+                'zip_code': None,
+                'term_months': term_months,
+                'message': 'No mortgage found to determine zip code'
+            })
+
+    # Default to 30-year if not specified
+    if not term_months:
+        term_months = 360
+
+    # Get historical rates
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    rates = MortgageRate.query.filter(
+        MortgageRate.zip_code == zip_code,
+        MortgageRate.term_months == term_months,
+        MortgageRate.rate_date >= cutoff_date
+    ).order_by(MortgageRate.rate_date.asc()).all()
+
+    if not rates:
+        return jsonify({
+            'history': [],
+            'statistics': None,
+            'zip_code': zip_code,
+            'term_months': term_months,
+            'message': 'No rate data available for this zip code and term'
+        })
+
+    # Build history list
+    history = []
+    for rate in rates:
+        history.append({
+            'date': rate.rate_date.strftime('%Y-%m-%d') if rate.rate_date else None,
+            'rate': rate.rate,
+            'rate_display': f'{rate.rate * 100:.2f}%'
+        })
+
+    # Calculate statistics
+    rate_values = [r.rate for r in rates]
+    current_rate = rates[-1].rate
+    oldest_rate = rates[0].rate
+    rate_change = current_rate - oldest_rate
+
+    statistics = {
+        'current_rate': current_rate,
+        'min_rate': min(rate_values),
+        'max_rate': max(rate_values),
+        'avg_rate': round(sum(rate_values) / len(rate_values), 5),
+        'change': round(rate_change, 5),
+        'change_display': f'{rate_change * 100:+.2f}%',
+        'data_points': len(rates)
+    }
+
+    return jsonify({
+        'history': history,
+        'statistics': statistics,
+        'zip_code': zip_code,
+        'term_months': term_months
+    })
+
+
+# ============ Report Preview Endpoint ============
+
+@api_bp.route('/report-preview', methods=['GET'])
+@login_required
+def get_report_preview():
+    """
+    Get a preview of the user's refinancing report.
+
+    Query params:
+    - mortgage_id (optional): Specific mortgage to generate report for.
+                              If not provided, includes all mortgages.
+
+    Returns:
+    {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john@example.com"
+        },
+        "generated_at": "2026-01-18T10:00:00",
+        "mortgages": [
+            {
+                "id": 1,
+                "name": "Primary Home",
+                "zip_code": "12345",
+                "original_principal": 300000,
+                "original_rate": 0.065,
+                "remaining_principal": 275000,
+                "remaining_term": 300,
+                "current_monthly_payment": 1896.20
+            }
+        ],
+        "rate_statistics": {
+            "180": {
+                "current_rate": 0.055,
+                "min_rate": 0.052,
+                "max_rate": 0.058,
+                "avg_rate": 0.055,
+                "rate_change_30d": -0.003,
+                "data_points": 30
+            },
+            "360": {...}
+        },
+        "savings_opportunities": [
+            {
+                "mortgage_id": 1,
+                "mortgage_name": "Primary Home",
+                "term_months": 360,
+                "term_years": 30,
+                "current_rate": 0.058,
+                "new_monthly_payment": 1650.50,
+                "monthly_savings": 245.70,
+                "total_interest_savings": 45000,
+                "break_even_months": 12,
+                "refi_cost": 3000,
+                "rate_trend": "down",
+                "rate_change_30d": -0.003
+            }
+        ]
+    }
+    """
+    from .report_aggregator import ReportDataAggregationService
+
+    mortgage_id = request.args.get('mortgage_id', type=int)
+
+    # Generate report
+    service = ReportDataAggregationService(days=30)
+
+    if mortgage_id:
+        # Verify mortgage belongs to user
+        mortgage = Mortgage.query.filter_by(
+            id=mortgage_id, user_id=current_user.id
+        ).first()
+        if not mortgage:
+            return jsonify({'error': 'Mortgage not found'}), 404
+
+        # Get status for specific mortgage
+        mortgage_status = service.get_mortgage_status(mortgage)
+        mortgages = [mortgage_status]
+
+        # Get rate stats for this mortgage's zip
+        rate_stats = service.aggregate_rate_data_bulk(mortgage.zip_code)
+
+        # Find opportunities
+        opportunities = service.find_savings_opportunities(mortgage_status, rate_stats)
+        for opp in opportunities:
+            opp['mortgage_id'] = mortgage.id
+            opp['mortgage_name'] = mortgage.name
+
+        user_data = {
+            'id': current_user.id,
+            'name': current_user.name,
+            'email': current_user.email
+        }
+    else:
+        # Generate full report
+        report = service.generate_user_report(current_user.id)
+        if not report:
+            return jsonify({
+                'user': {
+                    'id': current_user.id,
+                    'name': current_user.name,
+                    'email': current_user.email
+                },
+                'generated_at': datetime.utcnow().isoformat(),
+                'mortgages': [],
+                'rate_statistics': {},
+                'savings_opportunities': []
+            })
+
+        mortgages = report.mortgages
+        rate_stats = report.rate_statistics
+        opportunities = report.savings_opportunities
+        user_data = {
+            'id': report.user_id,
+            'name': report.user_name,
+            'email': report.user_email
+        }
+
+    # Format mortgages for response
+    mortgage_list = []
+    for m in mortgages:
+        mortgage_list.append({
+            'id': m.mortgage_id,
+            'name': m.name,
+            'zip_code': m.zip_code,
+            'original_principal': m.original_principal,
+            'original_rate': m.original_rate,
+            'original_term': m.original_term,
+            'remaining_principal': m.remaining_principal,
+            'remaining_term': m.remaining_term,
+            'current_monthly_payment': round(m.current_monthly_payment, 2),
+            'current_rate': m.current_rate
+        })
+
+    # Format rate statistics for response
+    rate_stats_dict = {}
+    for term, stats in rate_stats.items():
+        rate_stats_dict[str(term)] = {
+            'current_rate': stats.current_rate,
+            'min_rate': stats.min_rate,
+            'max_rate': stats.max_rate,
+            'avg_rate': round(stats.avg_rate, 5),
+            'rate_change_30d': round(stats.rate_change_30d, 5),
+            'data_points': stats.data_points
+        }
+
+    # Format savings opportunities for response
+    savings_list = []
+    for opp in opportunities:
+        savings = opp.get('savings')
+        if savings:
+            savings_list.append({
+                'mortgage_id': opp.get('mortgage_id'),
+                'mortgage_name': opp.get('mortgage_name'),
+                'term_months': opp.get('term_months'),
+                'term_years': opp.get('term_years'),
+                'current_rate': opp.get('current_rate'),
+                'new_monthly_payment': round(savings.new_monthly_payment, 2),
+                'monthly_savings': round(savings.monthly_savings, 2),
+                'total_interest_savings': round(savings.total_interest_savings, 2),
+                'break_even_months': savings.break_even_months,
+                'refi_cost': savings.refi_cost,
+                'rate_trend': opp.get('rate_trend'),
+                'rate_change_30d': opp.get('rate_change_30d')
+            })
+
+    return jsonify({
+        'user': user_data,
+        'generated_at': datetime.utcnow().isoformat(),
+        'mortgages': mortgage_list,
+        'rate_statistics': rate_stats_dict,
+        'savings_opportunities': savings_list
+    })
