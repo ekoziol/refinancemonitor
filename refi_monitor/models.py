@@ -119,6 +119,9 @@ class Subscription(db.Model):
     stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_subscription_id = db.Column(db.String, index=True, unique=False, nullable=True)
 
+    # Trial tracking
+    trial_end = db.Column(db.Integer, index=False, unique=False, nullable=True)
+
     # Timestamps
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
