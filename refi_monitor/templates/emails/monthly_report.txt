@@ -1,0 +1,58 @@
+MONTHLY REFINANCING REPORT - {{ report_month }}
+============================================
+
+Hello {{ user_name }},
+
+Here's your monthly refinancing report with the latest market data.
+
+
+RATE SUMMARY (Last 30 Days)
+---------------------------
+{% if rate_statistics %}
+{% for term_months, stats in rate_statistics.items() %}
+{% set term_years = term_months // 12 %}
+{{ term_years }}-Year Fixed: {{ "%.2f"|format(stats.current_rate * 100) }}%
+  Range: {{ "%.2f"|format(stats.min_rate * 100) }}% - {{ "%.2f"|format(stats.max_rate * 100) }}%
+  30-Day Change: {% if stats.rate_change_30d >= 0 %}+{% endif %}{{ "%.2f"|format(stats.rate_change_30d * 100) }}%
+{% endfor %}
+{% else %}
+Rate data not available for your area.
+{% endif %}
+
+
+YOUR MORTGAGES
+--------------
+{% if mortgages %}
+{% for mortgage in mortgages %}
+{{ mortgage.name }}
+  Balance: ${{ "{:,.0f}".format(mortgage.remaining_principal) }}
+  Rate: {{ "%.2f"|format(mortgage.original_rate * 100) }}%
+  Monthly Payment: ${{ "{:,.2f}".format(mortgage.current_monthly_payment) }}
+{% endfor %}
+{% else %}
+No mortgages on file.
+{% endif %}
+
+
+SAVINGS OPPORTUNITIES
+---------------------
+{% if savings_opportunities %}
+{% for opp in savings_opportunities[:3] %}
+{{ opp.mortgage_name|default('Your Mortgage') }} - {{ opp.term_years }}-Year Refinance
+  New Rate: {{ "%.2f"|format(opp.current_rate * 100) }}%
+  New Monthly Payment: ${{ "{:,.2f}".format(opp.savings.new_monthly_payment) }}
+  Monthly Savings: ${{ "{:,.2f}".format(opp.savings.monthly_savings) }}
+  Total Interest Savings: ${{ "{:,.0f}".format(opp.savings.total_interest_savings) }}
+  Break-Even: {{ opp.savings.break_even_months }} months
+{% endfor %}
+{% else %}
+No refinancing opportunities meet your criteria at this time.
+We'll keep monitoring rates for you.
+{% endif %}
+
+
+------------------------------------------------------------
+This report was generated automatically by RefiAlert on {{ generated_date }}.
+Log in to your account to see more details and manage your alerts.
+
+To unsubscribe from monthly reports, update your preferences in your account settings.

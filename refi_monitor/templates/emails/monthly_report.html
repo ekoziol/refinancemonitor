@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Refinancing Report - {{ report_month }}</title>
+    <style>
+        /* Reset and base styles */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+        }
+
+        /* Header */
+        .header {
+            background-color: #4CAF50;
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header .report-date {
+            margin-top: 10px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Content area */
+        .content {
+            background-color: #f9f9f9;
+            padding: 25px;
+            margin-top: 0;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .intro-text {
+            margin-bottom: 20px;
+            color: #555555;
+        }
+
+        /* Section styling */
+        .section {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #4CAF50;
+            font-size: 18px;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #333333;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Rate change indicators */
+        .rate-up {
+            color: #dc3545;
+        }
+
+        .rate-down {
+            color: #28a745;
+        }
+
+        .rate-neutral {
+            color: #6c757d;
+        }
+
+        /* Opportunity boxes */
+        .opportunity-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .opportunity-box h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+            font-size: 16px;
+        }
+
+        .opportunity-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .opportunity-box li {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .savings-highlight {
+            background-color: #c8e6c9;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        /* No opportunities message */
+        .no-opportunities {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+            color: #856404;
+        }
+
+        /* Empty state messages */
+        .empty-state {
+            color: #6c757d;
+            font-style: italic;
+            padding: 15px;
+            text-align: center;
+        }
+
+        /* Call to action */
+        .cta {
+            text-align: center;
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 5px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .cta-button:hover {
+            background-color: #45a049;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding: 20px;
+            border-top: 1px solid #dddddd;
+            font-size: 12px;
+            color: #666666;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        .unsubscribe {
+            color: #999999;
+            font-size: 11px;
+        }
+
+        .unsubscribe a {
+            color: #666666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Monthly Refinancing Report</h1>
+            <div class="report-date">{{ report_month }}</div>
+        </div>
+
+        <div class="content">
+            <h2 class="greeting">Hello {{ user_name }},</h2>
+            <p class="intro-text">Here's your monthly refinancing report with the latest market data and potential savings opportunities.</p>
+
+            <!-- Rate Statistics Section -->
+            <div class="section">
+                <h3>Rate Summary (Last 30 Days)</h3>
+                {% if rate_statistics %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Term</th>
+                            <th>Current Rate</th>
+                            <th>30-Day Range</th>
+                            <th>Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for term_months, stats in rate_statistics.items() %}
+                        {% set term_years = term_months // 12 %}
+                        <tr>
+                            <td>{{ term_years }}-Year Fixed</td>
+                            <td>{{ "%.2f"|format(stats.current_rate * 100) }}%</td>
+                            <td>{{ "%.2f"|format(stats.min_rate * 100) }}% - {{ "%.2f"|format(stats.max_rate * 100) }}%</td>
+                            <td>
+                                {% if stats.rate_change_30d < 0 %}
+                                <span class="rate-down">{{ "%.2f"|format(stats.rate_change_30d * 100) }}%</span>
+                                {% elif stats.rate_change_30d > 0 %}
+                                <span class="rate-up">+{{ "%.2f"|format(stats.rate_change_30d * 100) }}%</span>
+                                {% else %}
+                                <span class="rate-neutral">0.00%</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-state">Rate data not available for your area.</p>
+                {% endif %}
+            </div>
+
+            <!-- Mortgages Section -->
+            <div class="section">
+                <h3>Your Mortgages</h3>
+                {% if mortgages %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Balance</th>
+                            <th>Rate</th>
+                            <th>Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mortgage in mortgages %}
+                        <tr>
+                            <td>{{ mortgage.name }}</td>
+                            <td>${{ "{:,.0f}".format(mortgage.remaining_principal) }}</td>
+                            <td>{{ "%.2f"|format(mortgage.original_rate * 100) }}%</td>
+                            <td>${{ "{:,.2f}".format(mortgage.current_monthly_payment) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-state">No mortgages on file.</p>
+                {% endif %}
+            </div>
+
+            <!-- Savings Opportunities Section -->
+            <div class="section">
+                <h3>Savings Opportunities</h3>
+                {% if savings_opportunities %}
+                    {% for opp in savings_opportunities[:3] %}
+                    <div class="opportunity-box">
+                        <h4>{{ opp.mortgage_name|default('Your Mortgage') }} - {{ opp.term_years }}-Year Refinance</h4>
+                        <ul>
+                            <li><strong>New Rate:</strong> {{ "%.2f"|format(opp.current_rate * 100) }}%</li>
+                            <li><strong>New Monthly Payment:</strong> ${{ "{:,.2f}".format(opp.savings.new_monthly_payment) }}</li>
+                            <li><strong>Monthly Savings:</strong> <span class="savings-highlight">${{ "{:,.2f}".format(opp.savings.monthly_savings) }}</span></li>
+                            <li><strong>Total Interest Savings:</strong> ${{ "{:,.0f}".format(opp.savings.total_interest_savings) }}</li>
+                            <li><strong>Break-Even:</strong> {{ opp.savings.break_even_months }} months</li>
+                        </ul>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="no-opportunities">
+                    <p>No refinancing opportunities meet your criteria at this time. We'll keep monitoring rates for you.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Call to Action -->
+            {% if dashboard_url %}
+            <div class="cta">
+                <p>Log in to your account to see more details and manage your alerts.</p>
+                <a href="{{ dashboard_url }}" class="cta-button">View Dashboard</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            <p>This report was generated automatically by RefiAlert on {{ generated_date }}.</p>
+            <p class="unsubscribe">To unsubscribe from monthly reports, <a href="{{ preferences_url|default('#') }}">update your preferences</a> in your account settings.</p>
+        </div>
+    </div>
+</body>
+</html>
