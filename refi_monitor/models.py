@@ -143,6 +143,7 @@ class Alert(db.Model):
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     deleted_at = db.Column(db.DateTime, index=True, unique=False, nullable=True)
+    paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
 
     triggers = db.relationship("Trigger")
     subscription = db.relationship("Subscription", uselist=False, backref="alert", lazy="joined")
@@ -158,9 +159,9 @@ class Alert(db.Model):
         return self.subscription.payment_status if self.subscription else None
 
     @property
-    def paused_at(self):
-        """Proxy property for subscription.paused_at (backwards compatibility)."""
-        return self.subscription.paused_at if self.subscription else None
+    def is_paused(self):
+        """Check if the alert is currently paused."""
+        return self.paused_at is not None
 
     @property
     def stripe_subscription_id(self):
@@ -182,7 +183,11 @@ class Alert(db.Model):
 
         Returns one of: 'active', 'paused', 'triggered', 'waiting'
         """
-        # Check for payment failure first
+        # Check if explicitly paused
+        if self.is_paused:
+            return 'paused'
+
+        # Check for payment failure
         if self.payment_status == 'payment_failed':
             return 'paused'
 
