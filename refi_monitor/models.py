@@ -1,3 +1,4 @@
+from datetime import datetime
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -122,6 +123,31 @@ class Alert(db.Model):
     paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     stripe_subscription_id = db.Column(db.String, index=False, unique=False, nullable=True)
     triggers = db.relationship("Trigger")
+
+    def get_status(self):
+        """Calculate current alert status for display.
+
+        Returns one of: 'active', 'paused', 'triggered', 'waiting'
+        """
+        # Check for payment failure first
+        if self.payment_status == 'payment_failed':
+            return 'paused'
+
+        # Check if waiting for payment/activation
+        if not self.initial_payment or self.payment_status != 'active':
+            return 'waiting'
+
+        # Check for recent triggers (within 24 hours)
+        if self.triggers:
+            triggered_records = [t for t in self.triggers if t.alert_trigger_status == 1]
+            if triggered_records:
+                recent = max(triggered_records, key=lambda t: t.created_on or datetime.min)
+                if recent.created_on:
+                    hours_ago = (datetime.utcnow() - recent.created_on).total_seconds() / 3600
+                    if hours_ago < 24:
+                        return 'triggered'
+
+        return 'active'
 
 
 class Trigger(db.Model):
