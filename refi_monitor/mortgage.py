@@ -20,6 +20,7 @@ import stripe
 import os
 from dotenv import load_dotenv, find_dotenv
 import json
+from datetime import datetime
 
 
 # This is your real test secret API key.
@@ -391,3 +392,46 @@ def alert_payment_webhook():
         print('Unhandled event type {}'.format(event_type))
 
     return jsonify({'status': 'success'})
+
+
+@mortgage_bp.route('/alert/<int:alert_id>/pause', methods=['POST'])
+@login_required
+def pause_alert(alert_id):
+    """Pause an alert - stops alert checking without deleting."""
+    alert = Alert.query.filter_by(id=alert_id, user_id=current_user.id).first()
+    if alert is None:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if alert.paused_at is not None:
+        return jsonify({'error': 'Alert is already paused'}), 400
+
+    alert.paused_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Alert paused',
+        'alert_id': alert_id,
+        'paused_at': alert.paused_at.isoformat()
+    })
+
+
+@mortgage_bp.route('/alert/<int:alert_id>/resume', methods=['POST'])
+@login_required
+def resume_alert(alert_id):
+    """Resume a paused alert - restarts alert checking."""
+    alert = Alert.query.filter_by(id=alert_id, user_id=current_user.id).first()
+    if alert is None:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if alert.paused_at is None:
+        return jsonify({'error': 'Alert is not paused'}), 400
+
+    alert.paused_at = None
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Alert resumed',
+        'alert_id': alert_id
+    })
