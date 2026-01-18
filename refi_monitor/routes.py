@@ -1,10 +1,12 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template, jsonify
+from datetime import datetime
+from flask import render_template, jsonify, request
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
+from . import db
 from .models import Mortgage, Alert
 from .plots import *
 from .scheduler import trigger_manual_check
@@ -138,3 +140,56 @@ def admin_trigger_alerts():
         return jsonify({'status': 'success', 'message': result}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@main_bp.route("/alert/<int:alert_id>/pause", methods=['POST'])
+@login_required
+def pause_alert(alert_id):
+    """Pause an alert to temporarily stop notifications."""
+    alert = Alert.query.get(alert_id)
+    if not alert:
+        return jsonify({'status': 'error', 'message': 'Alert not found'}), 404
+
+    # Verify user owns this alert
+    mortgage = Mortgage.query.get(alert.mortgage_id)
+    if not mortgage or mortgage.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    if alert.paused_at is not None:
+        return jsonify({'status': 'error', 'message': 'Alert is already paused'}), 400
+
+    alert.paused_at = datetime.utcnow()
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Alert paused',
+        'paused_at': alert.paused_at.isoformat()
+    }), 200
+
+
+@main_bp.route("/alert/<int:alert_id>/resume", methods=['POST'])
+@login_required
+def resume_alert(alert_id):
+    """Resume a paused alert to restart notifications."""
+    alert = Alert.query.get(alert_id)
+    if not alert:
+        return jsonify({'status': 'error', 'message': 'Alert not found'}), 404
+
+    # Verify user owns this alert
+    mortgage = Mortgage.query.get(alert.mortgage_id)
+    if not mortgage or mortgage.user_id != current_user.id:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    if alert.paused_at is None:
+        return jsonify({'status': 'error', 'message': 'Alert is not paused'}), 400
+
+    alert.paused_at = None
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Alert resumed'
+    }), 200
