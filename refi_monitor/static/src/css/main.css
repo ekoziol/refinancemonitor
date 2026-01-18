@@ -1,3 +1,344 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* oklch color tokens - Light theme */
+    /* Format: lightness chroma hue (no commas, space-separated) */
+
+    /* Base colors */
+    --background: 0.98 0.005 240;
+    --foreground: 0.15 0.02 240;
+
+    /* Card/Surface */
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.02 240;
+
+    /* Popover */
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.02 240;
+
+    /* Primary - Blue-tinted professional */
+    --primary: 0.55 0.18 250;
+    --primary-foreground: 0.98 0.005 240;
+
+    /* Secondary - Subtle gray-blue */
+    --secondary: 0.93 0.01 240;
+    --secondary-foreground: 0.25 0.02 240;
+
+    /* Muted - For disabled/subtle elements */
+    --muted: 0.93 0.01 240;
+    --muted-foreground: 0.55 0.02 240;
+
+    /* Accent - Highlights and hover states */
+    --accent: 0.93 0.01 240;
+    --accent-foreground: 0.25 0.02 240;
+
+    /* Destructive - Errors and warnings */
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.98 0.01 25;
+
+    /* Borders and inputs */
+    --border: 0.88 0.01 240;
+    --input: 0.88 0.01 240;
+    --ring: 0.55 0.18 250;
+
+    /* Glass-morphism tokens */
+    --glass: 1 0 0;
+    --glass-foreground: 0.15 0.02 240;
+    --glass-border: 0.9 0.005 240;
+
+    /* Semantic status colors */
+    --success: 0.65 0.2 145;
+    --success-foreground: 0.98 0.01 145;
+
+    --warning: 0.75 0.18 85;
+    --warning-foreground: 0.2 0.05 85;
+
+    --info: 0.6 0.15 230;
+    --info-foreground: 0.98 0.01 230;
+
+    /* Chart palette - 5 distinct colors for data viz */
+    --chart-1: 0.55 0.18 250;  /* Primary blue */
+    --chart-2: 0.65 0.2 145;   /* Success green */
+    --chart-3: 0.65 0.2 30;    /* Orange */
+    --chart-4: 0.6 0.2 330;    /* Pink/Magenta */
+    --chart-5: 0.7 0.15 190;   /* Teal */
+
+    /* Border radius */
+    --radius: 0.5rem;
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .dark {
+    /* oklch color tokens - Dark theme */
+
+    /* Base colors */
+    --background: 0.12 0.02 250;
+    --foreground: 0.93 0.01 240;
+
+    /* Card/Surface - Slightly elevated from background */
+    --card: 0.16 0.02 250;
+    --card-foreground: 0.93 0.01 240;
+
+    /* Popover */
+    --popover: 0.16 0.02 250;
+    --popover-foreground: 0.93 0.01 240;
+
+    /* Primary - Brighter for dark mode */
+    --primary: 0.7 0.15 250;
+    --primary-foreground: 0.12 0.02 250;
+
+    /* Secondary */
+    --secondary: 0.22 0.02 250;
+    --secondary-foreground: 0.93 0.01 240;
+
+    /* Muted */
+    --muted: 0.22 0.02 250;
+    --muted-foreground: 0.6 0.02 240;
+
+    /* Accent */
+    --accent: 0.22 0.02 250;
+    --accent-foreground: 0.93 0.01 240;
+
+    /* Destructive */
+    --destructive: 0.6 0.22 25;
+    --destructive-foreground: 0.98 0.01 25;
+
+    /* Borders and inputs */
+    --border: 0.25 0.02 250;
+    --input: 0.25 0.02 250;
+    --ring: 0.7 0.15 250;
+
+    /* Glass-morphism tokens - More transparent for dark mode */
+    --glass: 0.2 0.02 250;
+    --glass-foreground: 0.93 0.01 240;
+    --glass-border: 0.3 0.02 250;
+
+    /* Semantic status colors - Adjusted for dark mode */
+    --success: 0.7 0.18 145;
+    --success-foreground: 0.12 0.02 145;
+
+    --warning: 0.8 0.16 85;
+    --warning-foreground: 0.15 0.05 85;
+
+    --info: 0.7 0.13 230;
+    --info-foreground: 0.12 0.02 230;
+
+    /* Chart palette - Adjusted for dark mode visibility */
+    --chart-1: 0.7 0.15 250;   /* Primary blue */
+    --chart-2: 0.7 0.18 145;   /* Success green */
+    --chart-3: 0.75 0.18 30;   /* Orange */
+    --chart-4: 0.7 0.18 330;   /* Pink/Magenta */
+    --chart-5: 0.75 0.13 190;  /* Teal */
+  }
+
+  /* Base styles */
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Glass-morphism component variants */
+  .glass-panel {
+    @apply bg-glass/80 backdrop-blur-glass;
+    @apply border border-glass-border;
+    @apply shadow-glass;
+  }
+
+  .glass-panel-elevated {
+    @apply bg-glass/90 backdrop-blur-glass-lg;
+    @apply border border-glass-border;
+    @apply shadow-glass shadow-glow;
+  }
+
+  /* Card variants */
+  .card-glass {
+    @apply glass-panel rounded-lg p-6;
+  }
+
+  .card-solid {
+    @apply bg-card text-card-foreground;
+    @apply border border-border rounded-lg p-6;
+    @apply shadow-sm;
+  }
+
+  /* Button base styles for shadcn/ui compatibility */
+  .btn {
+    @apply inline-flex items-center justify-center;
+    @apply rounded-md text-sm font-medium;
+    @apply ring-offset-background;
+    @apply transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground;
+    @apply hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground;
+    @apply hover:bg-secondary/80;
+  }
+
+  .btn-destructive {
+    @apply btn bg-destructive text-destructive-foreground;
+    @apply hover:bg-destructive/90;
+  }
+
+  .btn-outline {
+    @apply btn border border-input bg-background;
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply btn hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-glass {
+    @apply btn glass-button;
+  }
+
+  /* Input base styles */
+  .input-base {
+    @apply flex h-10 w-full rounded-md;
+    @apply border border-input bg-background;
+    @apply px-3 py-2 text-sm;
+    @apply ring-offset-background;
+    @apply file:border-0 file:bg-transparent file:text-sm file:font-medium;
+    @apply placeholder:text-muted-foreground;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center rounded-full;
+    @apply border px-2.5 py-0.5 text-xs font-semibold;
+    @apply transition-colors;
+  }
+
+  .badge-default {
+    @apply badge border-transparent bg-primary text-primary-foreground;
+  }
+
+  .badge-secondary {
+    @apply badge border-transparent bg-secondary text-secondary-foreground;
+  }
+
+  .badge-destructive {
+    @apply badge border-transparent bg-destructive text-destructive-foreground;
+  }
+
+  .badge-outline {
+    @apply badge text-foreground;
+  }
+
+  .badge-success {
+    @apply badge border-transparent bg-success text-success-foreground;
+  }
+
+  .badge-warning {
+    @apply badge border-transparent bg-warning text-warning-foreground;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-in {
+    animation-name: enter;
+    animation-duration: 150ms;
+    --tw-enter-opacity: initial;
+    --tw-enter-scale: initial;
+    --tw-enter-rotate: initial;
+    --tw-enter-translate-x: initial;
+    --tw-enter-translate-y: initial;
+  }
+
+  .animate-out {
+    animation-name: exit;
+    animation-duration: 150ms;
+    --tw-exit-opacity: initial;
+    --tw-exit-scale: initial;
+    --tw-exit-rotate: initial;
+    --tw-exit-translate-x: initial;
+    --tw-exit-translate-y: initial;
+  }
+
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(
+        var(--tw-enter-translate-x, 0),
+        var(--tw-enter-translate-y, 0),
+        0
+      ) scale3d(
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1)
+      ) rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+
+  @keyframes exit {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(
+        var(--tw-exit-translate-x, 0),
+        var(--tw-exit-translate-y, 0),
+        0
+      ) scale3d(
+        var(--tw-exit-scale, 1),
+        var(--tw-exit-scale, 1),
+        var(--tw-exit-scale, 1)
+      ) rotate(var(--tw-exit-rotate, 0));
+    }
+  }
+
+  /* Focus ring utility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Scrollbar utilities */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: oklch(var(--border));
+    border-radius: 4px;
+  }
+
+  /* No scrollbar utility */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
