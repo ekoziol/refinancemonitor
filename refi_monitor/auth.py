@@ -1,4 +1,5 @@
 """Routes for user authentication."""
+from datetime import datetime, timedelta
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user
 
@@ -6,6 +7,10 @@ from . import login_manager
 from .forms import LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm
 from .models import User, PasswordResetToken, db
 from .notifications import send_password_reset_email, send_verification_email
+
+# Rate limiting constants
+PASSWORD_RESET_RATE_LIMIT = 3  # Max requests per time window
+PASSWORD_RESET_RATE_WINDOW = timedelta(hours=1)  # Time window for rate limiting
 
 # Blueprint Configuration
 auth_bp = Blueprint(
@@ -91,17 +96,26 @@ def forgot_password():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            # Invalidate any existing tokens for this user
-            PasswordResetToken.query.filter_by(user_id=user.id, used=False).update({'used': True})
-            db.session.commit()
+            # Rate limiting: check recent password reset requests
+            cutoff_time = datetime.utcnow() - PASSWORD_RESET_RATE_WINDOW
+            recent_tokens = PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.created_on >= cutoff_time
+            ).count()
 
-            # Create new token
-            token = PasswordResetToken(user_id=user.id)
-            db.session.add(token)
-            db.session.commit()
+            # Only proceed if within rate limit (silently ignore if exceeded to prevent email enumeration)
+            if recent_tokens < PASSWORD_RESET_RATE_LIMIT:
+                # Invalidate any existing tokens for this user
+                PasswordResetToken.query.filter_by(user_id=user.id, used=False).update({'used': True})
+                db.session.commit()
 
-            # Send email
-            send_password_reset_email(user, token.token)
+                # Create new token
+                token = PasswordResetToken(user_id=user.id)
+                db.session.add(token)
+                db.session.commit()
+
+                # Send email
+                send_password_reset_email(user, token.token)
 
         # Always show success message to prevent email enumeration
         flash('If an account with that email exists, a password reset link has been sent.')
