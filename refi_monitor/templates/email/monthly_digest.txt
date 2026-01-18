@@ -1,0 +1,73 @@
+REFIALERT MONTHLY DIGEST
+{{ report_month }}
+
+================================================================================
+
+Hello {{ user_name }},
+
+Here's your monthly mortgage market update and personalized refinancing insights.
+
+================================================================================
+CURRENT RATE TRENDS
+================================================================================
+{% if rate_trends %}
+{% for trend in rate_trends %}
+{{ trend.term_label }}
+  Current Rate: {{ "%.3f"|format(trend.current_rate) }}%
+  {% if trend.change != 0 %}Change: {% if trend.change > 0 %}+{% endif %}{{ "%.3f"|format(trend.change) }}% from last month{% else %}No change from last month{% endif %}
+
+{% endfor %}
+{% else %}
+Rate data is currently being collected. Check back next month for trends.
+{% endif %}
+
+================================================================================
+YOUR MORTGAGES
+================================================================================
+{% if mortgages %}
+{% for mortgage in mortgages %}
+{{ mortgage.name }}
+  Remaining Balance: ${{ "{:,.2f}".format(mortgage.remaining_principal) }}
+  Current Rate: {{ "%.2f"|format(mortgage.original_interest_rate * 100) }}%
+  Remaining Term: {{ mortgage.remaining_term }} months ({{ (mortgage.remaining_term / 12)|round(1) }} years)
+  Monthly Payment: ${{ "{:,.2f}".format(mortgage.monthly_payment) }}
+
+{% endfor %}
+{% else %}
+No mortgages on file. Add a mortgage to start tracking refinancing opportunities.
+{% endif %}
+
+================================================================================
+SAVINGS OPPORTUNITIES
+================================================================================
+{% if opportunities %}
+{% for opp in opportunities %}
+{{ opp.mortgage_name }}
+  Based on current {{ opp.term_label }} rates of {{ "%.3f"|format(opp.current_market_rate) }}%:
+
+  Monthly Savings: ${{ "{:,.2f}".format(opp.monthly_savings) }}/month
+  Potential Lifetime Savings: ${{ "{:,.2f}".format(opp.lifetime_savings) }}
+  New Monthly Payment: ${{ "{:,.2f}".format(opp.new_monthly_payment) }}
+
+{% endfor %}
+{% if total_monthly_savings > 0 %}
+----------------------------------------
+TOTAL POTENTIAL MONTHLY SAVINGS: ${{ "{:,.2f}".format(total_monthly_savings) }}
+----------------------------------------
+{% endif %}
+{% else %}
+No significant refinancing opportunities this month. We'll continue monitoring
+rates for you.
+{% endif %}
+
+================================================================================
+
+Want to explore these opportunities further?
+Visit your dashboard: {{ dashboard_url }}
+
+--------------------------------------------------------------------------------
+This is your monthly digest from RefiAlert.
+To manage your email preferences or update your alert settings, log in to your
+account at {{ dashboard_url }}
+
+(c) {{ current_year }} RefiAlert. All rights reserved.
