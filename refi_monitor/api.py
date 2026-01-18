@@ -46,6 +46,8 @@ def alert_to_dict(alert):
         'calculated_refinance_cost': alert.calculated_refinance_cost,
         'payment_status': alert.payment_status,
         'status': alert.get_status(),
+        'is_paused': alert.is_paused,
+        'paused_at': alert.paused_at.isoformat() if alert.paused_at else None,
         'created_on': alert.created_on.isoformat() if alert.created_on else None,
         'updated_on': alert.updated_on.isoformat() if alert.updated_on else None,
     }
@@ -277,6 +279,50 @@ def delete_alert(alert_id):
         send_cancellation_confirmation(user.email, alert_id)
 
     return jsonify({'message': 'Alert deleted successfully'})
+
+
+@api_bp.route('/alerts/<int:alert_id>/pause', methods=['POST'])
+@login_required
+def pause_alert(alert_id):
+    """Pause an alert to temporarily stop monitoring."""
+    alert = Alert.query.filter_by(id=alert_id, deleted_at=None).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if alert.is_paused:
+        return jsonify({'error': 'Alert is already paused'}), 400
+
+    alert.paused_at = datetime.utcnow()
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify(alert_to_dict(alert))
+
+
+@api_bp.route('/alerts/<int:alert_id>/resume', methods=['POST'])
+@login_required
+def resume_alert(alert_id):
+    """Resume a paused alert to restart monitoring."""
+    alert = Alert.query.filter_by(id=alert_id, deleted_at=None).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    if not alert.is_paused:
+        return jsonify({'error': 'Alert is not paused'}), 400
+
+    alert.paused_at = None
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify(alert_to_dict(alert))
 
 
 # ============ User Endpoints ============
@@ -826,13 +872,13 @@ def _get_alert_stats():
     active_alerts = Alert.query.join(Subscription).filter(
         Subscription.payment_status == 'active',
         Alert.deleted_at.is_(None),
-        Subscription.paused_at.is_(None)
+        Alert.paused_at.is_(None)
     ).count()
 
     # Paused
-    paused_alerts = Alert.query.join(Subscription).filter(
+    paused_alerts = Alert.query.filter(
         Alert.deleted_at.is_(None),
-        Subscription.paused_at.isnot(None)
+        Alert.paused_at.isnot(None)
     ).count()
 
     # Waiting for payment
