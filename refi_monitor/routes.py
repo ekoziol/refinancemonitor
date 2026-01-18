@@ -1,13 +1,11 @@
 """Routes for parent Flask app."""
 import os
-from datetime import datetime
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from . import db
-from .models import Mortgage, Alert
+from .models import Mortgage, Alert, Trigger
 from .plots import *
 from .scheduler import trigger_manual_check
 
@@ -57,9 +55,7 @@ def dashboard():
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]),
-        Alert.initial_payment == True,
-        Alert.deleted_at == None
+        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
     )
 
     mortgage_alerts = []
@@ -93,9 +89,7 @@ def manage():
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]),
-        Alert.initial_payment == True,
-        Alert.deleted_at == None
+        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
     )
 
     mortgage_alerts = []
@@ -146,54 +140,40 @@ def admin_trigger_alerts():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-@main_bp.route("/alert/<int:alert_id>/pause", methods=['POST'])
+@main_bp.route('/history', methods=['GET'])
 @login_required
-def pause_alert(alert_id):
-    """Pause an alert to temporarily stop notifications."""
-    alert = Alert.query.get(alert_id)
-    if not alert:
-        return jsonify({'status': 'error', 'message': 'Alert not found'}), 404
+def history():
+    """Alert History View - shows past triggers with dates, reasons, and actions."""
+    mortgages = Mortgage.query.filter_by(user_id=current_user.id).all()
+    mortgage_ids = [m.id for m in mortgages]
 
-    # Verify user owns this alert
-    mortgage = Mortgage.query.get(alert.mortgage_id)
-    if not mortgage or mortgage.user_id != current_user.id:
-        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    alerts = Alert.query.filter(
+        Alert.mortgage_id.in_(mortgage_ids),
+        Alert.initial_payment == True
+    ).all()
+    alert_ids = [a.id for a in alerts]
 
-    if alert.paused_at is not None:
-        return jsonify({'status': 'error', 'message': 'Alert is already paused'}), 400
+    triggers = Trigger.query.filter(
+        Trigger.alert_id.in_(alert_ids)
+    ).order_by(Trigger.alert_trigger_date.desc()).all()
 
-    alert.paused_at = datetime.utcnow()
-    alert.updated_on = datetime.utcnow()
-    db.session.commit()
+    # Build trigger data with related alert and mortgage info
+    trigger_history = []
+    for trigger in triggers:
+        alert = Alert.query.get(trigger.alert_id)
+        mortgage = Mortgage.query.get(alert.mortgage_id) if alert else None
+        trigger_history.append({
+            'trigger': trigger,
+            'alert': alert,
+            'mortgage': mortgage
+        })
 
-    return jsonify({
-        'status': 'success',
-        'message': 'Alert paused',
-        'paused_at': alert.paused_at.isoformat()
-    }), 200
-
-
-@main_bp.route("/alert/<int:alert_id>/resume", methods=['POST'])
-@login_required
-def resume_alert(alert_id):
-    """Resume a paused alert to restart notifications."""
-    alert = Alert.query.get(alert_id)
-    if not alert:
-        return jsonify({'status': 'error', 'message': 'Alert not found'}), 404
-
-    # Verify user owns this alert
-    mortgage = Mortgage.query.get(alert.mortgage_id)
-    if not mortgage or mortgage.user_id != current_user.id:
-        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-
-    if alert.paused_at is None:
-        return jsonify({'status': 'error', 'message': 'Alert is not paused'}), 400
-
-    alert.paused_at = None
-    alert.updated_on = datetime.utcnow()
-    db.session.commit()
-
-    return jsonify({
-        'status': 'success',
-        'message': 'Alert resumed'
-    }), 200
+    return render_template(
+        'alert_history.jinja2',
+        title='Alert History',
+        template='history-template',
+        current_user=current_user,
+        trigger_history=trigger_history,
+        alerts=alerts,
+        mortgages=mortgages
+    )
