@@ -1,0 +1,279 @@
+{% extends "main_layout.jinja2" %}
+
+{% block pagecontent %}
+<b><h1 class="text-4xl text-center text-gray-800">System Health Dashboard</h1></b>
+<p class="text-center text-gray-600 mt-2">Monitor rate fetching, email delivery, and system status</p>
+
+<div class="ml-72 mt-8 mr-8" id="health-dashboard">
+    <!-- Loading state -->
+    <div id="loading-state" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+        <p class="mt-2 text-gray-600">Loading system health data...</p>
+    </div>
+
+    <!-- Dashboard content (hidden until loaded) -->
+    <div id="dashboard-content" class="hidden">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <!-- Email Success Rate -->
+            <div class="bg-gradient-to-r from-green-900 to-green-800 shadow-lg rounded-lg">
+                <div class="md:p-7 p-4">
+                    <h2 class="text-2xl text-center text-gray-200" id="email-success-rate">--</h2>
+                    <h3 class="text-sm text-gray-400 text-center">Email Success (24h)</h3>
+                </div>
+            </div>
+            <!-- Emails Sent -->
+            <div class="bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg rounded-lg">
+                <div class="md:p-7 p-4">
+                    <h2 class="text-2xl text-center text-gray-200" id="emails-sent">--</h2>
+                    <h3 class="text-sm text-gray-400 text-center">Emails Sent (24h)</h3>
+                </div>
+            </div>
+            <!-- Active Alerts -->
+            <div class="bg-gradient-to-r from-purple-900 to-purple-800 shadow-lg rounded-lg">
+                <div class="md:p-7 p-4">
+                    <h2 class="text-2xl text-center text-gray-200" id="active-alerts">--</h2>
+                    <h3 class="text-sm text-gray-400 text-center">Active Alerts</h3>
+                </div>
+            </div>
+            <!-- Triggers Today -->
+            <div class="bg-gradient-to-r from-orange-900 to-orange-800 shadow-lg rounded-lg">
+                <div class="md:p-7 p-4">
+                    <h2 class="text-2xl text-center text-gray-200" id="triggers-today">--</h2>
+                    <h3 class="text-sm text-gray-400 text-center">Triggers (24h)</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduler Status -->
+        <div class="mb-8">
+            <h2 class="text-2xl text-gray-800 mb-4">Scheduled Jobs</h2>
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Job Name</th>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Next Run</th>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Schedule</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduler-jobs">
+                        <tr>
+                            <td colspan="3" class="px-4 py-4 text-center text-gray-500">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Email Statistics -->
+        <div class="mb-8">
+            <h2 class="text-2xl text-gray-800 mb-4">Email Delivery Statistics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 24h Stats -->
+                <div class="bg-white shadow-lg rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Last 24 Hours</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total:</span>
+                            <span class="font-semibold" id="email-24h-total">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sent:</span>
+                            <span class="text-green-600 font-semibold" id="email-24h-sent">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Failed:</span>
+                            <span class="text-red-600 font-semibold" id="email-24h-failed">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Success Rate:</span>
+                            <span class="font-semibold" id="email-24h-rate">--</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 7d Stats -->
+                <div class="bg-white shadow-lg rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Last 7 Days</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total:</span>
+                            <span class="font-semibold" id="email-7d-total">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sent:</span>
+                            <span class="text-green-600 font-semibold" id="email-7d-sent">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Failed:</span>
+                            <span class="text-red-600 font-semibold" id="email-7d-failed">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Success Rate:</span>
+                            <span class="font-semibold" id="email-7d-rate">--</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 30d Stats -->
+                <div class="bg-white shadow-lg rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Last 30 Days</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total:</span>
+                            <span class="font-semibold" id="email-30d-total">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sent:</span>
+                            <span class="text-green-600 font-semibold" id="email-30d-sent">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Failed:</span>
+                            <span class="text-red-600 font-semibold" id="email-30d-failed">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Success Rate:</span>
+                            <span class="font-semibold" id="email-30d-rate">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Status Distribution -->
+        <div class="mb-8">
+            <h2 class="text-2xl text-gray-800 mb-4">Alert Status</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                    <h3 class="text-3xl font-bold text-gray-800" id="alerts-total">--</h3>
+                    <p class="text-gray-600">Total Alerts</p>
+                </div>
+                <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                    <h3 class="text-3xl font-bold text-green-600" id="alerts-active">--</h3>
+                    <p class="text-gray-600">Active</p>
+                </div>
+                <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                    <h3 class="text-3xl font-bold text-yellow-600" id="alerts-paused">--</h3>
+                    <p class="text-gray-600">Paused</p>
+                </div>
+                <div class="bg-white shadow-lg rounded-lg p-6 text-center">
+                    <h3 class="text-3xl font-bold text-blue-600" id="alerts-waiting">--</h3>
+                    <p class="text-gray-600">Waiting</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Errors -->
+        <div class="mb-8">
+            <h2 class="text-2xl text-gray-800 mb-4">Recent Email Errors</h2>
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Date</th>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Type</th>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Recipient</th>
+                            <th class="bg-gray-800 text-gray-200 px-4 py-3 text-left">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="error-logs">
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-gray-500">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Last Updated -->
+        <div class="text-center text-gray-500 text-sm mb-8">
+            Last updated: <span id="last-updated">--</span>
+            <button onclick="loadHealthData()" class="ml-4 px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700">
+                Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadHealthData() {
+    try {
+        const response = await fetch('/api/system-health');
+        if (!response.ok) throw new Error('Failed to fetch health data');
+        const data = await response.json();
+
+        // Hide loading, show content
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('dashboard-content').classList.remove('hidden');
+
+        // Update summary cards
+        document.getElementById('email-success-rate').textContent = data.email_stats['24h'].success_rate + '%';
+        document.getElementById('emails-sent').textContent = data.email_stats['24h'].sent;
+        document.getElementById('active-alerts').textContent = data.alert_stats.active;
+        document.getElementById('triggers-today').textContent = data.trigger_stats['24h'];
+
+        // Update scheduler jobs
+        const schedulerBody = document.getElementById('scheduler-jobs');
+        if (data.scheduler_jobs.length === 0) {
+            schedulerBody.innerHTML = '<tr><td colspan="3" class="px-4 py-4 text-center text-gray-500">No scheduled jobs running</td></tr>';
+        } else {
+            schedulerBody.innerHTML = data.scheduler_jobs.map(job => `
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="px-4 py-3">${job.name}</td>
+                    <td class="px-4 py-3">${job.next_run ? new Date(job.next_run).toLocaleString() : 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${job.trigger}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Update email stats
+        ['24h', '7d', '30d'].forEach(period => {
+            const stats = data.email_stats[period];
+            document.getElementById(`email-${period}-total`).textContent = stats.total;
+            document.getElementById(`email-${period}-sent`).textContent = stats.sent;
+            document.getElementById(`email-${period}-failed`).textContent = stats.failed;
+            document.getElementById(`email-${period}-rate`).textContent = stats.success_rate + '%';
+        });
+
+        // Update alert stats
+        document.getElementById('alerts-total').textContent = data.alert_stats.total;
+        document.getElementById('alerts-active').textContent = data.alert_stats.active;
+        document.getElementById('alerts-paused').textContent = data.alert_stats.paused;
+        document.getElementById('alerts-waiting').textContent = data.alert_stats.waiting;
+
+        // Update error logs
+        const errorBody = document.getElementById('error-logs');
+        if (data.error_logs.length === 0) {
+            errorBody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-green-600">No recent errors</td></tr>';
+        } else {
+            errorBody.innerHTML = data.error_logs.map(error => `
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm">${error.created_on ? new Date(error.created_on).toLocaleString() : 'N/A'}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">${error.email_type}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${error.recipient}</td>
+                    <td class="px-4 py-3 text-sm text-red-600">${error.error_message || 'Unknown error'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Update last updated time
+        document.getElementById('last-updated').textContent = new Date(data.generated_at).toLocaleString();
+
+    } catch (error) {
+        console.error('Error loading health data:', error);
+        document.getElementById('loading-state').innerHTML = `
+            <div class="text-red-600">
+                <p>Failed to load system health data</p>
+                <button onclick="loadHealthData()" class="mt-2 px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700">
+                    Retry
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', loadHealthData);
+</script>
+{% endblock %}

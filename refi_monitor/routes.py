@@ -148,6 +148,18 @@ def admin_trigger_alerts():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@main_bp.route('/system-health', methods=['GET'])
+@login_required
+def system_health():
+    """System Health Dashboard - shows rate fetch status, email delivery rates, error logs."""
+    return render_template(
+        'system_health.jinja2',
+        title='System Health',
+        template='health-template',
+        current_user=current_user
+    )
+
+
 @main_bp.route('/history', methods=['GET'])
 @login_required
 def history():
