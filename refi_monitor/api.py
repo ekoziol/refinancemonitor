@@ -409,3 +409,168 @@ def get_kpi_metrics():
         'mortgage_id': mortgage.id,
         'mortgage_name': mortgage.name
     })
+
+
+# ============ Timeline Endpoints ============
+
+@api_bp.route('/timeline', methods=['GET'])
+@login_required
+def get_timeline():
+    """
+    Get timeline data for visualization showing mortgage events and rate forecast.
+
+    Query params:
+    - mortgage_id (optional): Specific mortgage to get timeline for.
+                              If not provided, uses first mortgage.
+    - forecast_days (optional): Number of days to forecast (default 30)
+
+    Returns:
+    {
+        "events": [
+            {"date": "2025-01-15", "type": "mortgage_created", "label": "Mortgage Created", "value": null},
+            {"date": "2025-02-01", "type": "alert_created", "label": "Alert Set", "value": 3.5},
+            {"date": "2025-02-10", "type": "trigger", "label": "Rate Target Met", "value": 3.2},
+            ...
+        ],
+        "rate_history": [
+            {"date": "2025-01-01", "rate": 6.5},
+            {"date": "2025-01-02", "rate": 6.48},
+            ...
+        ],
+        "forecast": [
+            {"date": "2025-02-15", "rate": 6.3, "upper": 6.5, "lower": 6.1},
+            ...
+        ],
+        "target_rate": 5.5
+    }
+    """
+    import numpy as np
+    from datetime import timedelta
+
+    mortgage_id = request.args.get('mortgage_id', type=int)
+    forecast_days = request.args.get('forecast_days', default=30, type=int)
+
+    # Get mortgage
+    if mortgage_id:
+        mortgage = Mortgage.query.filter_by(
+            id=mortgage_id, user_id=current_user.id
+        ).first()
+    else:
+        mortgage = Mortgage.query.filter_by(user_id=current_user.id).first()
+
+    if not mortgage:
+        return jsonify({
+            'events': [],
+            'rate_history': [],
+            'forecast': [],
+            'target_rate': None
+        })
+
+    events = []
+
+    # Add mortgage creation event
+    if mortgage.created_on:
+        events.append({
+            'date': mortgage.created_on.strftime('%Y-%m-%d'),
+            'type': 'mortgage_created',
+            'label': 'Mortgage Created',
+            'description': f'{mortgage.name} - ${mortgage.original_principal:,.0f}',
+            'value': None
+        })
+
+    # Get alerts and their triggers
+    alerts = Alert.query.filter_by(
+        mortgage_id=mortgage.id, deleted_at=None
+    ).all()
+
+    for alert in alerts:
+        if alert.created_on:
+            target_val = alert.target_interest_rate or alert.target_monthly_payment
+            events.append({
+                'date': alert.created_on.strftime('%Y-%m-%d'),
+                'type': 'alert_created',
+                'label': 'Alert Set',
+                'description': f'Target: {alert.target_interest_rate}%' if alert.target_interest_rate else f'Target: ${alert.target_monthly_payment:,.0f}/mo',
+                'value': target_val
+            })
+
+        # Get triggers for this alert
+        from .models import Trigger
+        triggers = Trigger.query.filter_by(alert_id=alert.id).all()
+        for trigger in triggers:
+            if trigger.alert_trigger_date and trigger.alert_trigger_status == 1:
+                events.append({
+                    'date': trigger.alert_trigger_date.strftime('%Y-%m-%d'),
+                    'type': 'trigger',
+                    'label': 'Rate Target Met',
+                    'description': trigger.alert_trigger_reason or 'Target achieved',
+                    'value': None
+                })
+
+    # Get rate history
+    rate_history = []
+    historical_rates = MortgageRate.query.filter_by(
+        zip_code=mortgage.zip_code,
+        term_months=mortgage.original_term
+    ).order_by(MortgageRate.rate_date).all()
+
+    for rate_record in historical_rates:
+        rate_history.append({
+            'date': rate_record.rate_date.strftime('%Y-%m-%d'),
+            'rate': round(rate_record.rate * 100, 3)  # Convert to percentage
+        })
+
+    # Generate forecast if we have rate history
+    forecast = []
+    if len(rate_history) >= 2:
+        # Convert to numeric for regression
+        import pandas as pd
+        df = pd.DataFrame(rate_history)
+        df['date'] = pd.to_datetime(df['date'])
+        df['day_num'] = (df['date'] - df['date'].min()).dt.days
+
+        # Linear regression
+        coeffs = np.polyfit(df['day_num'], df['rate'], 1)
+        slope, intercept = coeffs
+
+        # Calculate residual std for confidence interval
+        predicted = slope * df['day_num'] + intercept
+        residuals = df['rate'] - predicted
+        std_dev = residuals.std()
+
+        # Generate forecast points
+        last_date = df['date'].max()
+        last_day_num = df['day_num'].max()
+
+        for i in range(1, forecast_days + 1):
+            forecast_date = last_date + timedelta(days=i)
+            day_num = last_day_num + i
+            rate = slope * day_num + intercept
+
+            forecast.append({
+                'date': forecast_date.strftime('%Y-%m-%d'),
+                'rate': round(rate, 3),
+                'upper': round(rate + 1.96 * std_dev, 3),
+                'lower': round(rate - 1.96 * std_dev, 3)
+            })
+
+    # Get target rate from active alert if exists
+    target_rate = None
+    active_alert = Alert.query.filter_by(
+        mortgage_id=mortgage.id,
+        deleted_at=None
+    ).first()
+    if active_alert and active_alert.target_interest_rate:
+        target_rate = active_alert.target_interest_rate
+
+    # Sort events by date
+    events.sort(key=lambda x: x['date'])
+
+    return jsonify({
+        'events': events,
+        'rate_history': rate_history,
+        'forecast': forecast,
+        'target_rate': target_rate,
+        'mortgage_id': mortgage.id,
+        'mortgage_name': mortgage.name
+    })
