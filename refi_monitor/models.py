@@ -92,6 +92,41 @@ class Mortgage_Tracking(db.Model):
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
 
 
+class Subscription(db.Model):
+    """Stripe subscription model for handling payment data.
+
+    Separates payment/subscription concerns from Alert model for cleaner architecture.
+    Each Alert can have one Subscription (one-to-one relationship).
+    """
+    __tablename__ = 'subscription'
+    id = db.Column(db.Integer, primary_key=True)
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id'), unique=True, nullable=False)
+
+    # Payment status
+    initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True, default=False)
+    payment_status = db.Column(db.String, index=True, unique=False, nullable=True, default='incomplete')
+    paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    # Billing period tracking
+    initial_period_start = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    initial_period_end = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    period_start = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    period_end = db.Column(db.Integer, index=False, unique=False, nullable=True)
+
+    # Stripe identifiers
+    price_id = db.Column(db.String, index=False, unique=False, nullable=True)
+    stripe_customer_id = db.Column(db.String, index=True, unique=False, nullable=True)
+    stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
+    stripe_subscription_id = db.Column(db.String, index=True, unique=False, nullable=True)
+
+    # Timestamps
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    def __repr__(self):
+        return '<Subscription {} for alert {}: {}>'.format(self.id, self.alert_id, self.payment_status)
+
+
 class Alert(db.Model):
     __tablename__ = 'alert'
     id = db.Column(db.Integer, primary_key=True)
@@ -109,20 +144,38 @@ class Alert(db.Model):
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     deleted_at = db.Column(db.DateTime, index=True, unique=False, nullable=True)
 
-    initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True)
-    payment_status = db.Column(db.String, index=False, unique=False, nullable=True)
-    initial_period_start = db.Column(
-        db.Integer, index=False, unique=False, nullable=True
-    )
-    initial_period_end = db.Column(db.Integer, index=False, unique=False, nullable=True)
-    period_start = db.Column(db.Integer, index=False, unique=False, nullable=True)
-    period_end = db.Column(db.Integer, index=False, unique=False, nullable=True)
-    price_id = db.Column(db.String, index=False, unique=False, nullable=True)
-    stripe_customer_id = db.Column(db.String, index=False, unique=False, nullable=True)
-    stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
-    paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
-    stripe_subscription_id = db.Column(db.String, index=False, unique=False, nullable=True)
     triggers = db.relationship("Trigger")
+    subscription = db.relationship("Subscription", uselist=False, backref="alert", lazy="joined")
+
+    @property
+    def initial_payment(self):
+        """Proxy property for subscription.initial_payment (backwards compatibility)."""
+        return self.subscription.initial_payment if self.subscription else False
+
+    @property
+    def payment_status(self):
+        """Proxy property for subscription.payment_status (backwards compatibility)."""
+        return self.subscription.payment_status if self.subscription else None
+
+    @property
+    def paused_at(self):
+        """Proxy property for subscription.paused_at (backwards compatibility)."""
+        return self.subscription.paused_at if self.subscription else None
+
+    @property
+    def stripe_subscription_id(self):
+        """Proxy property for subscription.stripe_subscription_id (backwards compatibility)."""
+        return self.subscription.stripe_subscription_id if self.subscription else None
+
+    @property
+    def stripe_invoice_id(self):
+        """Proxy property for subscription.stripe_invoice_id (backwards compatibility)."""
+        return self.subscription.stripe_invoice_id if self.subscription else None
+
+    @property
+    def stripe_customer_id(self):
+        """Proxy property for subscription.stripe_customer_id (backwards compatibility)."""
+        return self.subscription.stripe_customer_id if self.subscription else None
 
     def get_status(self):
         """Calculate current alert status for display.
