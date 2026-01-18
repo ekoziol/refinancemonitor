@@ -249,6 +249,48 @@ def update_alert(alert_id):
     return jsonify(alert_to_dict(alert))
 
 
+@api_bp.route('/alerts/<int:alert_id>', methods=['PATCH'])
+@login_required
+def patch_alert(alert_id):
+    """Partially update an alert's threshold values.
+
+    Accepts partial updates for threshold fields only:
+    - target_monthly_payment
+    - target_interest_rate
+    - target_term
+    - estimate_refinance_cost
+    """
+    alert = Alert.query.filter_by(id=alert_id, deleted_at=None).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Only allow threshold fields to be updated via PATCH
+    threshold_fields = ['target_monthly_payment', 'target_interest_rate',
+                        'target_term', 'estimate_refinance_cost']
+
+    updated_fields = []
+    for field in threshold_fields:
+        if field in data:
+            setattr(alert, field, data[field])
+            updated_fields.append(field)
+
+    if not updated_fields:
+        return jsonify({'error': 'No valid threshold fields provided'}), 400
+
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify(alert_to_dict(alert))
+
+
 @api_bp.route('/alerts/<int:alert_id>', methods=['DELETE'])
 @login_required
 def delete_alert(alert_id):
