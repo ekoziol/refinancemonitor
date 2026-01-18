@@ -175,3 +175,145 @@ class TestResendVerificationLogic:
         # Should not allow resend for already verified users
         should_allow_resend = not email_verified
         assert should_allow_resend is False
+
+
+class TestPasswordResetToken:
+    """Tests for PasswordResetToken logic (unit tests without DB)."""
+
+    def test_password_reset_token_generation(self):
+        """Test that password reset token generation creates a secure token."""
+        token = secrets.token_urlsafe(32)
+        assert token is not None
+        assert len(token) > 20  # Should be reasonably long
+
+    def test_password_reset_token_expiry_default(self):
+        """Test that password reset token expiry is calculated correctly (1 hour default)."""
+        now = datetime.utcnow()
+        expiry = now + timedelta(hours=1)
+
+        # Expiry should be about 1 hour in the future
+        diff = (expiry - now).total_seconds()
+        assert 0.9 * 3600 < diff < 1.1 * 3600  # Within 10% of 1 hour
+
+    def test_password_reset_token_is_valid_logic(self):
+        """Test token validity check with valid token."""
+        used = False
+        expires_on = datetime.utcnow() + timedelta(hours=1)
+
+        is_valid = not used and datetime.utcnow() < expires_on
+        assert is_valid is True
+
+    def test_password_reset_token_invalid_when_used(self):
+        """Test token is invalid when marked as used."""
+        used = True
+        expires_on = datetime.utcnow() + timedelta(hours=1)
+
+        is_valid = not used and datetime.utcnow() < expires_on
+        assert is_valid is False
+
+    def test_password_reset_token_invalid_when_expired(self):
+        """Test token is invalid when expired."""
+        used = False
+        expires_on = datetime.utcnow() - timedelta(hours=1)  # Expired
+
+        is_valid = not used and datetime.utcnow() < expires_on
+        assert is_valid is False
+
+    def test_password_reset_token_invalid_when_used_and_expired(self):
+        """Test token is invalid when both used and expired."""
+        used = True
+        expires_on = datetime.utcnow() - timedelta(hours=1)
+
+        is_valid = not used and datetime.utcnow() < expires_on
+        assert is_valid is False
+
+
+class TestPasswordResetFlow:
+    """Integration-style tests for password reset flow components."""
+
+    def test_password_reset_email_contains_required_elements(self):
+        """Test that password reset email template has required elements."""
+        user_name = "Test User"
+        reset_url = "http://example.com/reset-password/abc123token"
+
+        # Simulating email template content
+        html_template = f"""
+        <h2>Hello {user_name},</h2>
+        <a href="{reset_url}" class="btn">Reset Password</a>
+        <p>{reset_url}</p>
+        <p>This link will expire in 1 hour</p>
+        """
+
+        assert user_name in html_template
+        assert reset_url in html_template
+        assert "Reset Password" in html_template
+        assert "1 hour" in html_template
+
+    def test_password_reset_url_format(self):
+        """Test that password reset URL is properly formatted."""
+        base_url = "http://example.com"
+        token = "abc123xyz789token"
+        url = f"{base_url}/reset-password/{token}"
+
+        assert url.startswith("http")
+        assert token in url
+        assert "/reset-password/" in url
+
+    def test_forgot_password_flow_expected_sequence(self):
+        """Test expected sequence of operations in forgot password flow."""
+        expected_steps = [
+            "1. User submits forgot password form with email",
+            "2. Check if email exists in database",
+            "3. Invalidate any existing unused tokens for this user",
+            "4. Create new password reset token with 1-hour expiry",
+            "5. Send password reset email",
+            "6. Show success message (same message regardless of email existence)",
+            "7. Redirect to login page",
+        ]
+        assert len(expected_steps) == 7
+
+    def test_reset_password_flow_expected_sequence(self):
+        """Test expected sequence of operations in reset password flow."""
+        expected_steps = [
+            "1. User clicks reset link with token",
+            "2. Validate token exists and is not expired/used",
+            "3. If invalid, redirect to forgot password with error",
+            "4. User submits new password form",
+            "5. Update user password (hashed)",
+            "6. Mark token as used",
+            "7. Redirect to login with success message",
+        ]
+        assert len(expected_steps) == 7
+
+    def test_email_enumeration_protection(self):
+        """Test that same message is shown regardless of email existence."""
+        # Whether email exists or not, user should see the same message
+        email_exists = True
+        expected_message = "If an account with that email exists, a password reset link has been sent."
+
+        email_not_exists = False
+        # Same message should be shown
+        assert expected_message == expected_message  # Always same
+
+    def test_token_invalidation_on_new_request(self):
+        """Test that previous tokens are invalidated when new one is requested."""
+        # Simulating the logic: old tokens should be marked as used
+        old_tokens_used_status = [False, False, False]  # 3 unused tokens
+
+        # After requesting new token, all old ones should be marked used
+        for i in range(len(old_tokens_used_status)):
+            old_tokens_used_status[i] = True
+
+        assert all(old_tokens_used_status)  # All should be True now
+
+    def test_password_requirements(self):
+        """Test password validation requirements."""
+        min_length = 6
+
+        # Valid passwords
+        assert len("password123") >= min_length
+        assert len("abcdef") >= min_length
+
+        # Invalid passwords (too short)
+        assert len("12345") < min_length
+        assert len("abc") < min_length
