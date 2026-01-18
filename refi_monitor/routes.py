@@ -71,7 +71,7 @@ def dashboard():
             mortgage_alerts.append([m, None, None, None])
 
     return render_template(
-        'dashboard.jinja2',
+        'glass_dashboard.jinja2',
         title='Refinance Monitor Dashboard',
         template='dashboard-template',
         current_user=current_user,
@@ -105,7 +105,7 @@ def manage():
             mortgage_alerts.append([m, None, None, None])
 
     return render_template(
-        'manage.jinja2',
+        'glass_manage.jinja2',
         title='Refinance Monitor Management',
         template='manage-template',
         current_user=current_user,
