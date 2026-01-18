@@ -4,6 +4,10 @@ from flask_mail import Message
 from . import mail, db
 from .models import User, Alert, Mortgage, Trigger, EmailLog
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .report_aggregator import ReportData
 
 
 def log_email(email_type, recipient_email, subject, recipient_user_id=None,
@@ -668,6 +672,223 @@ Questions? Contact us or log in to create a new alert.
     except Exception as e:
         current_app.logger.error(f"Failed to send cancellation confirmation to {user_email}: {str(e)}")
         # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return False
+
+
+def send_monthly_report_email(report_data: 'ReportData'):
+    """
+    Send monthly refinancing report email to user.
+
+    Args:
+        report_data: ReportData object containing user info, rate stats, and savings opportunities.
+
+    Returns:
+        bool: True if email sent successfully, False otherwise.
+    """
+    try:
+        subject = f"RefiAlert: Your Monthly Refinancing Report - {report_data.generated_at.strftime('%B %Y')}"
+
+        # Format rate statistics for display
+        rate_stats_html = ""
+        for term_months, stats in report_data.rate_statistics.items():
+            term_years = term_months // 12
+            trend_icon = "📉" if stats.rate_change_30d < 0 else "📈" if stats.rate_change_30d > 0 else "➡️"
+            rate_stats_html += f"""
+            <tr>
+                <td>{term_years}-Year Fixed</td>
+                <td>{stats.current_rate * 100:.2f}%</td>
+                <td>{stats.min_rate * 100:.2f}% - {stats.max_rate * 100:.2f}%</td>
+                <td>{trend_icon} {stats.rate_change_30d * 100:+.2f}%</td>
+            </tr>
+            """
+
+        # Format mortgages for display
+        mortgages_html = ""
+        for m in report_data.mortgages:
+            mortgages_html += f"""
+            <tr>
+                <td>{m.name}</td>
+                <td>${m.remaining_principal:,.0f}</td>
+                <td>{m.original_rate * 100:.2f}%</td>
+                <td>${m.current_monthly_payment:,.2f}</td>
+            </tr>
+            """
+
+        # Format savings opportunities
+        opportunities_html = ""
+        if report_data.savings_opportunities:
+            for opp in report_data.savings_opportunities[:3]:  # Top 3 opportunities
+                savings = opp['savings']
+                opportunities_html += f"""
+                <div class="opportunity-box">
+                    <h4>{opp.get('mortgage_name', 'Your Mortgage')} - {opp['term_years']}-Year Refinance</h4>
+                    <ul>
+                        <li><strong>New Rate:</strong> {opp['current_rate'] * 100:.2f}%</li>
+                        <li><strong>New Monthly Payment:</strong> ${savings.new_monthly_payment:,.2f}</li>
+                        <li><strong>Monthly Savings:</strong> ${savings.monthly_savings:,.2f}</li>
+                        <li><strong>Total Interest Savings:</strong> ${savings.total_interest_savings:,.0f}</li>
+                        <li><strong>Break-Even:</strong> {savings.break_even_months} months</li>
+                    </ul>
+                </div>
+                """
+        else:
+            opportunities_html = "<p>No refinancing opportunities meet your criteria at this time. We'll keep monitoring rates for you.</p>"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .section { margin: 20px 0; padding: 15px; background: white; border-radius: 5px; }
+                .section h3 { margin-top: 0; color: #4CAF50; }
+                table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background-color: #f5f5f5; }
+                .opportunity-box { background-color: #e8f5e9; border-left: 4px solid #4CAF50; padding: 15px; margin: 15px 0; }
+                .opportunity-box h4 { margin-top: 0; color: #2e7d32; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📊 Monthly Refinancing Report</h1>
+                    <p>{{ report_month }}</p>
+                </div>
+                <div class="content">
+                    <h2>Hello {{ user_name }},</h2>
+                    <p>Here's your monthly refinancing report with the latest market data and potential savings opportunities.</p>
+
+                    <div class="section">
+                        <h3>📈 Rate Summary (Last 30 Days)</h3>
+                        {% if rate_stats_html %}
+                        <table>
+                            <tr>
+                                <th>Term</th>
+                                <th>Current Rate</th>
+                                <th>30-Day Range</th>
+                                <th>Change</th>
+                            </tr>
+                            {{ rate_stats_html | safe }}
+                        </table>
+                        {% else %}
+                        <p>Rate data not available for your area.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="section">
+                        <h3>🏠 Your Mortgages</h3>
+                        {% if mortgages_html %}
+                        <table>
+                            <tr>
+                                <th>Property</th>
+                                <th>Balance</th>
+                                <th>Rate</th>
+                                <th>Payment</th>
+                            </tr>
+                            {{ mortgages_html | safe }}
+                        </table>
+                        {% else %}
+                        <p>No mortgages on file.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="section">
+                        <h3>💰 Savings Opportunities</h3>
+                        {{ opportunities_html | safe }}
+                    </div>
+
+                    <p>Log in to your account to see more details and manage your alerts.</p>
+                </div>
+                <div class="footer">
+                    <p>This report was generated automatically by RefiAlert on {{ generated_date }}.</p>
+                    <p>To unsubscribe from monthly reports, update your preferences in your account settings.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=report_data.user_name,
+        report_month=report_data.generated_at.strftime('%B %Y'),
+        generated_date=report_data.generated_at.strftime('%B %d, %Y'),
+        rate_stats_html=rate_stats_html,
+        mortgages_html=mortgages_html,
+        opportunities_html=opportunities_html
+        )
+
+        # Plain text version
+        text_body = f"""
+Monthly Refinancing Report - {report_data.generated_at.strftime('%B %Y')}
+
+Hello {report_data.user_name},
+
+Here's your monthly refinancing report with the latest market data.
+
+RATE SUMMARY (Last 30 Days)
+"""
+        for term_months, stats in report_data.rate_statistics.items():
+            term_years = term_months // 12
+            text_body += f"- {term_years}-Year Fixed: {stats.current_rate * 100:.2f}% (30-day change: {stats.rate_change_30d * 100:+.2f}%)\n"
+
+        text_body += "\nYOUR MORTGAGES\n"
+        for m in report_data.mortgages:
+            text_body += f"- {m.name}: ${m.remaining_principal:,.0f} at {m.original_rate * 100:.2f}%, ${m.current_monthly_payment:,.2f}/month\n"
+
+        text_body += "\nSAVINGS OPPORTUNITIES\n"
+        if report_data.savings_opportunities:
+            for opp in report_data.savings_opportunities[:3]:
+                savings = opp['savings']
+                text_body += f"""
+{opp.get('mortgage_name', 'Your Mortgage')} - {opp['term_years']}-Year Refinance:
+  New Rate: {opp['current_rate'] * 100:.2f}%
+  Monthly Savings: ${savings.monthly_savings:,.2f}
+  Total Interest Savings: ${savings.total_interest_savings:,.0f}
+  Break-Even: {savings.break_even_months} months
+"""
+        else:
+            text_body += "No refinancing opportunities meet your criteria at this time.\n"
+
+        text_body += """
+---
+This report was generated automatically by RefiAlert.
+Log in to your account to see more details and manage your alerts.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[report_data.user_email],
+            body=text_body,
+            html=html_body
+        )
+
+        # Log the email before sending
+        email_log = log_email(
+            email_type='monthly_report',
+            recipient_email=report_data.user_email,
+            subject=subject,
+            recipient_user_id=report_data.user_id,
+            related_entity_type='user',
+            related_entity_id=report_data.user_id
+        )
+
+        mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
+        current_app.logger.info(f"Monthly report sent to {report_data.user_email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send monthly report to {report_data.user_email}: {str(e)}")
         try:
             if 'email_log' in dir():
                 email_log.mark_failed(str(e))
