@@ -122,9 +122,11 @@ class RateUpdater:
         """
         # Get all active alerts (those with paid status and target rates)
         # payment_status can be 'paid', 'unpaid', etc.
+        # Exclude soft-deleted alerts
         active_alerts = Alert.query.filter(
             Alert.payment_status == 'paid',
-            Alert.target_interest_rate.isnot(None)
+            Alert.target_interest_rate.isnot(None),
+            Alert.deleted_at == None
         ).all()
 
         triggered_count = 0

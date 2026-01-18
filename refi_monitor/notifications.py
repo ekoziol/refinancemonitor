@@ -462,3 +462,93 @@ This email was sent by RefiAlert.
     except Exception as e:
         current_app.logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
         return False
+
+
+def send_cancellation_confirmation(user_email, alert_id):
+    """
+    Send cancellation confirmation email to user.
+
+    Args:
+        user_email: User's email address
+        alert_id: ID of the canceled alert
+    """
+    try:
+        subject = "RefiAlert: Subscription Canceled"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #6c757d; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .info-box { background-color: #e2e3e5; border-left: 4px solid #6c757d; padding: 15px; margin: 20px 0; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Subscription Canceled</h1>
+                </div>
+                <div class="content">
+                    <div class="info-box">
+                        <h2>Your alert has been canceled</h2>
+                        <p><strong>Alert ID:</strong> #{{ alert_id }}</p>
+                    </div>
+
+                    <p>Your RefiAlert subscription has been successfully canceled. You will no longer receive notifications for this alert.</p>
+
+                    <p>We're sorry to see you go! If you change your mind, you can always create a new alert from your dashboard.</p>
+
+                    <p><strong>What happens now?</strong></p>
+                    <ul>
+                        <li>Your subscription billing has been stopped</li>
+                        <li>You won't receive any more notifications for this alert</li>
+                        <li>Your alert data has been archived</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <p>Questions? Contact us or log in to create a new alert.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        alert_id=alert_id
+        )
+
+        text_body = f"""
+Subscription Canceled
+
+Your alert has been canceled.
+Alert ID: #{alert_id}
+
+Your RefiAlert subscription has been successfully canceled. You will no longer receive notifications for this alert.
+
+We're sorry to see you go! If you change your mind, you can always create a new alert from your dashboard.
+
+What happens now?
+- Your subscription billing has been stopped
+- You won't receive any more notifications for this alert
+- Your alert data has been archived
+
+Questions? Contact us or log in to create a new alert.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user_email],
+            body=text_body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Cancellation confirmation sent to {user_email} for alert {alert_id}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send cancellation confirmation to {user_email}: {str(e)}")
+        return False

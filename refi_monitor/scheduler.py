@@ -112,8 +112,8 @@ def check_and_trigger_alerts():
     try:
         current_app.logger.info("Starting scheduled alert check...")
 
-        # Get all active alerts with paid subscriptions that are not paused
-        active_alerts = Alert.query.filter_by(payment_status='active').filter(
+        # Get all active alerts with paid subscriptions (not paused, not soft-deleted)
+        active_alerts = Alert.query.filter_by(payment_status='active', deleted_at=None).filter(
             Alert.paused_at.is_(None)
         ).all()
 

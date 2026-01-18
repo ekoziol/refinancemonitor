@@ -73,7 +73,12 @@
             <td class="text-gray-400"><b>Payment Status: </b></td><td class="text-gray-200">{{ a.payment_status }}</td>
           </tr>
         </table>
-        <a href="{{url_for('mortgage_bp.editalert', alert_id=a.id)}}" class="float-right text-green-600">Modify</a>
+        <div class="flex justify-end gap-4 mt-2">
+          <a href="{{url_for('mortgage_bp.editalert', alert_id=a.id)}}" class="text-green-600 hover:text-green-400">Modify</a>
+          <form action="{{url_for('mortgage_bp.delete_alert', alert_id=a.id)}}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this alert? This will cancel your subscription.');">
+            <button type="submit" class="text-red-500 hover:text-red-400">Delete</button>
+          </form>
+        </div>
         </div>
         </div>
         </td>
