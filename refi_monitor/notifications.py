@@ -1,5 +1,5 @@
 """Notification service for sending alerts to users."""
-from flask import current_app, render_template_string
+from flask import current_app, render_template_string, url_for
 from flask_mail import Message
 from . import mail, db
 from .models import User, Alert, Mortgage, Trigger
@@ -268,4 +268,99 @@ Questions? Contact us or log in to manage your alerts.
 
     except Exception as e:
         current_app.logger.error(f"Failed to send payment confirmation to {user_email}: {str(e)}")
+        return False
+
+
+def send_password_reset_email(user, token):
+    """
+    Send password reset email to user.
+
+    Args:
+        user: User object
+        token: Password reset token string
+    """
+    try:
+        reset_url = url_for('auth_bp.reset_password', token=token, _external=True)
+        subject = "RefiAlert: Password Reset Request"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .btn { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔐 Password Reset</h1>
+                </div>
+                <div class="content">
+                    <h2>Hello {{ user_name }},</h2>
+                    <p>We received a request to reset your password for your RefiAlert account.</p>
+
+                    <p>Click the button below to reset your password:</p>
+
+                    <p style="text-align: center;">
+                        <a href="{{ reset_url }}" class="btn">Reset Password</a>
+                    </p>
+
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all; background: #eee; padding: 10px; border-radius: 5px;">{{ reset_url }}</p>
+
+                    <div class="warning">
+                        <strong>Important:</strong> This link will expire in 1 hour for security reasons.
+                    </div>
+
+                    <p>If you did not request a password reset, please ignore this email. Your password will remain unchanged.</p>
+                </div>
+                <div class="footer">
+                    <p>This email was sent by RefiAlert. If you have any questions, please contact support.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=user.name,
+        reset_url=reset_url
+        )
+
+        text_body = f"""
+Password Reset Request
+
+Hello {user.name},
+
+We received a request to reset your password for your RefiAlert account.
+
+Click the link below to reset your password:
+{reset_url}
+
+Important: This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email. Your password will remain unchanged.
+
+---
+This email was sent by RefiAlert.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=text_body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Password reset email sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
         return False

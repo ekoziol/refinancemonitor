@@ -1,6 +1,8 @@
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+from datetime import datetime, timedelta
 
 
 class User(UserMixin, db.Model):
@@ -128,3 +130,35 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class PasswordResetToken(db.Model):
+    """Token for secure password reset."""
+
+    __tablename__ = 'password_reset_token'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    created_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    expires_on = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('reset_tokens', lazy='dynamic'))
+
+    def __init__(self, user_id, expires_hours=1):
+        self.user_id = user_id
+        self.token = secrets.token_urlsafe(32)
+        self.created_on = datetime.utcnow()
+        self.expires_on = self.created_on + timedelta(hours=expires_hours)
+        self.used = False
+
+    def is_valid(self):
+        """Check if token is still valid (not expired and not used)."""
+        return not self.used and datetime.utcnow() < self.expires_on
+
+    def mark_used(self):
+        """Mark token as used."""
+        self.used = True
+
+    def __repr__(self):
+        return '<PasswordResetToken {} for user {}>'.format(self.token[:8], self.user_id)

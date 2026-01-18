@@ -3,8 +3,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user
 
 from . import login_manager
-from .forms import LoginForm, SignupForm
-from .models import User, db
+from .forms import LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm
+from .models import User, PasswordResetToken, db
+from .notifications import send_password_reset_email
 
 # Blueprint Configuration
 auth_bp = Blueprint(
@@ -68,6 +69,83 @@ def login():
         title='Log in.',
         template='login-page',
         body="Log in with your User account.",
+    )
+
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """
+    Password reset request page.
+
+    GET requests serve the forgot password form.
+    POST requests validate email and send reset link.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('main_bp.dashboard'))
+
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            # Invalidate any existing tokens for this user
+            PasswordResetToken.query.filter_by(user_id=user.id, used=False).update({'used': True})
+            db.session.commit()
+
+            # Create new token
+            token = PasswordResetToken(user_id=user.id)
+            db.session.add(token)
+            db.session.commit()
+
+            # Send email
+            send_password_reset_email(user, token.token)
+
+        # Always show success message to prevent email enumeration
+        flash('If an account with that email exists, a password reset link has been sent.')
+        return redirect(url_for('auth_bp.login'))
+
+    return render_template(
+        'forgot_password.jinja2',
+        form=form,
+        title='Forgot Password',
+        template='forgot-password-page',
+    )
+
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """
+    Password reset page.
+
+    GET requests serve the reset password form.
+    POST requests validate and update the password.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('main_bp.dashboard'))
+
+    # Find and validate token
+    reset_token = PasswordResetToken.query.filter_by(token=token).first()
+    if not reset_token or not reset_token.is_valid():
+        flash('This password reset link is invalid or has expired.')
+        return redirect(url_for('auth_bp.forgot_password'))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.get(reset_token.user_id)
+        if user:
+            user.set_password(form.password.data)
+            reset_token.mark_used()
+            db.session.commit()
+            flash('Your password has been reset successfully. Please log in.')
+            return redirect(url_for('auth_bp.login'))
+        else:
+            flash('An error occurred. Please try again.')
+            return redirect(url_for('auth_bp.forgot_password'))
+
+    return render_template(
+        'reset_password.jinja2',
+        form=form,
+        title='Reset Password',
+        template='reset-password-page',
     )
 
 
