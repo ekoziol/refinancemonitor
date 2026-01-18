@@ -279,6 +279,113 @@ def delete_alert(alert_id):
     return jsonify({'message': 'Alert deleted successfully'})
 
 
+@api_bp.route('/alerts/<int:alert_id>/history', methods=['GET'])
+@login_required
+def get_alert_history(alert_id):
+    """
+    Get history for a specific alert including triggers and notification status.
+
+    Returns:
+    {
+        "alert": {
+            "id": 1,
+            "alert_type": "Interest Rate",
+            "target_interest_rate": 0.055,
+            "target_monthly_payment": null,
+            "target_term": 360,
+            "status": "active",
+            ...
+        },
+        "mortgage": {
+            "id": 1,
+            "name": "Primary Home",
+            ...
+        },
+        "triggers": [
+            {
+                "id": 1,
+                "alert_trigger_date": "2025-01-15T10:30:00",
+                "triggered_rate": 0.054,
+                "alert_trigger_status": 1,
+                "alert_trigger_reason": "Rate target met",
+                "notification": {
+                    "status": "sent",
+                    "sent_at": "2025-01-15T10:31:00"
+                }
+            },
+            ...
+        ],
+        "current_market_rate": 0.0675,
+        "total_triggers": 3,
+        "successful_notifications": 2
+    }
+    """
+    # Get alert and verify ownership
+    alert = Alert.query.filter_by(id=alert_id).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    # Get all triggers for this alert, ordered by date descending
+    triggers = Trigger.query.filter_by(alert_id=alert_id).order_by(
+        Trigger.alert_trigger_date.desc()
+    ).all()
+
+    # Get trigger IDs to batch query email logs
+    trigger_ids = [t.id for t in triggers]
+    email_logs = EmailLog.query.filter(
+        EmailLog.related_entity_type == 'trigger',
+        EmailLog.related_entity_id.in_(trigger_ids)
+    ).all() if trigger_ids else []
+
+    # Create lookup dict for email logs by trigger ID
+    email_log_by_trigger = {log.related_entity_id: log for log in email_logs}
+
+    # Build trigger data with notification status
+    trigger_data = []
+    successful_notifications = 0
+    for trigger in triggers:
+        email_log = email_log_by_trigger.get(trigger.id)
+        notification = None
+        if email_log:
+            notification = {
+                'status': email_log.status,
+                'sent_at': email_log.sent_at.isoformat() if email_log.sent_at else None,
+                'error_message': email_log.error_message
+            }
+            if email_log.status == 'sent':
+                successful_notifications += 1
+
+        trigger_data.append({
+            'id': trigger.id,
+            'alert_trigger_date': trigger.alert_trigger_date.isoformat() if trigger.alert_trigger_date else None,
+            'triggered_rate': trigger.triggered_rate,
+            'alert_trigger_status': trigger.alert_trigger_status,
+            'alert_trigger_reason': trigger.alert_trigger_reason,
+            'alert_type': trigger.alert_type,
+            'created_on': trigger.created_on.isoformat() if trigger.created_on else None,
+            'notification': notification
+        })
+
+    # Get current market rate for comparison
+    latest_rate = MortgageRate.query.filter_by(
+        term_months=alert.target_term
+    ).order_by(MortgageRate.rate_date.desc()).first()
+    current_market_rate = latest_rate.rate if latest_rate else None
+
+    return jsonify({
+        'alert': alert_to_dict(alert),
+        'mortgage': mortgage_to_dict(mortgage),
+        'triggers': trigger_data,
+        'current_market_rate': current_market_rate,
+        'total_triggers': len(triggers),
+        'successful_notifications': successful_notifications
+    })
+
+
 # ============ User Endpoints ============
 
 @api_bp.route('/user', methods=['GET'])
