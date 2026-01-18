@@ -3,7 +3,8 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 from datetime import datetime
 from . import db
-from .models import User, Mortgage, Alert
+from .models import User, Mortgage, Alert, MortgageRate
+from .calc import calc_loan_monthly_payment
 
 
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api')
@@ -276,3 +277,135 @@ def update_user():
     current_user.updated_on = datetime.utcnow()
     db.session.commit()
     return jsonify(user_to_dict(current_user))
+
+
+# ============ KPI Metrics Endpoints ============
+
+def calculate_refi_score(user_rate, market_rate, monthly_savings, remaining_term):
+    """
+    Calculate a refinance score from 0-100 based on potential savings.
+
+    Score factors:
+    - Rate differential (40%): Higher difference = better score
+    - Monthly savings (30%): Higher savings = better score
+    - Remaining term (30%): Longer term = more benefit from refi
+
+    Returns score 0-100 where higher is better opportunity to refinance.
+    """
+    if user_rate <= market_rate:
+        return 0  # No benefit if user rate is already at or below market
+
+    score = 0
+
+    # Rate differential component (0-40 points)
+    rate_diff = user_rate - market_rate
+    rate_diff_pct = min(rate_diff / 0.02, 1.0)  # Cap at 2% difference
+    score += rate_diff_pct * 40
+
+    # Monthly savings component (0-30 points)
+    if monthly_savings > 0:
+        savings_pct = min(monthly_savings / 500, 1.0)  # Cap at $500/month savings
+        score += savings_pct * 30
+
+    # Remaining term component (0-30 points)
+    term_pct = min(remaining_term / 360, 1.0)  # Cap at 30 years
+    score += term_pct * 30
+
+    return round(score)
+
+
+@api_bp.route('/kpi-metrics', methods=['GET'])
+@login_required
+def get_kpi_metrics():
+    """
+    Get KPI metrics for the dashboard: market rate, user rate, savings, refi score.
+
+    Query params:
+    - mortgage_id (optional): Specific mortgage to calculate metrics for.
+                              If not provided, uses first mortgage.
+
+    Returns:
+    {
+        "market_rate": 0.0294,
+        "market_rate_display": "2.94%",
+        "your_rate": 0.045,
+        "your_rate_display": "4.50%",
+        "monthly_savings": 250.50,
+        "monthly_savings_display": "$250.50",
+        "refi_score": 75,
+        "refi_score_label": "Good"
+    }
+    """
+    mortgage_id = request.args.get('mortgage_id', type=int)
+
+    # Get mortgage
+    if mortgage_id:
+        mortgage = Mortgage.query.filter_by(
+            id=mortgage_id, user_id=current_user.id
+        ).first()
+    else:
+        mortgage = Mortgage.query.filter_by(user_id=current_user.id).first()
+
+    if not mortgage:
+        return jsonify({
+            'market_rate': None,
+            'market_rate_display': '--',
+            'your_rate': None,
+            'your_rate_display': '--',
+            'monthly_savings': None,
+            'monthly_savings_display': '--',
+            'refi_score': None,
+            'refi_score_label': 'N/A'
+        })
+
+    # Get market rate (latest 30-year rate or default)
+    latest_rate = MortgageRate.query.filter_by(
+        term_months=360
+    ).order_by(MortgageRate.rate_date.desc()).first()
+
+    market_rate = latest_rate.rate if latest_rate else 0.0294  # Default 2.94%
+
+    # User's current rate
+    your_rate = mortgage.original_interest_rate
+
+    # Calculate monthly payments
+    current_payment = calc_loan_monthly_payment(
+        mortgage.remaining_principal,
+        your_rate,
+        mortgage.remaining_term
+    )
+    market_payment = calc_loan_monthly_payment(
+        mortgage.remaining_principal,
+        market_rate,
+        mortgage.remaining_term
+    )
+
+    monthly_savings = max(0, current_payment - market_payment)
+
+    # Calculate refi score
+    refi_score = calculate_refi_score(
+        your_rate, market_rate, monthly_savings, mortgage.remaining_term
+    )
+
+    # Score labels
+    if refi_score >= 70:
+        score_label = 'Excellent'
+    elif refi_score >= 50:
+        score_label = 'Good'
+    elif refi_score >= 30:
+        score_label = 'Fair'
+    else:
+        score_label = 'Low'
+
+    return jsonify({
+        'market_rate': market_rate,
+        'market_rate_display': f'{market_rate * 100:.2f}%',
+        'your_rate': your_rate,
+        'your_rate_display': f'{your_rate * 100:.2f}%',
+        'monthly_savings': round(monthly_savings, 2),
+        'monthly_savings_display': f'${monthly_savings:,.2f}',
+        'refi_score': refi_score,
+        'refi_score_label': score_label,
+        'mortgage_id': mortgage.id,
+        'mortgage_name': mortgage.name
+    })
