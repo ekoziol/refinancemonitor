@@ -574,3 +574,124 @@ def get_timeline():
         'mortgage_id': mortgage.id,
         'mortgage_name': mortgage.name
     })
+
+
+# ============ Savings Impact Endpoints ============
+
+@api_bp.route('/savings-impact', methods=['GET'])
+@login_required
+def get_savings_impact():
+    """
+    Get savings impact data comparing current mortgage vs refinance scenario.
+
+    Query params:
+    - mortgage_id (optional): Specific mortgage to calculate for.
+                              If not provided, uses first mortgage.
+    - target_rate (optional): Target refinance rate. Defaults to current market rate.
+    - target_term (optional): Target refinance term in months. Defaults to remaining term.
+    - refi_cost (optional): Estimated refinance closing costs. Defaults to 5000.
+
+    Returns:
+    {
+        "savings_data": [
+            {"month": 0, "cumulative_savings": -5000, "monthly_diff": 200},
+            {"month": 1, "cumulative_savings": -4800, "monthly_diff": 200},
+            ...
+        ],
+        "summary": {
+            "current_payment": 2015.11,
+            "refi_payment": 1815.11,
+            "monthly_savings": 200.00,
+            "breakeven_month": 25,
+            "total_savings_at_term": 67000,
+            "refi_cost": 5000
+        },
+        "mortgage_id": 1,
+        "mortgage_name": "Primary Home"
+    }
+    """
+    mortgage_id = request.args.get('mortgage_id', type=int)
+    target_rate = request.args.get('target_rate', type=float)
+    target_term = request.args.get('target_term', type=int)
+    refi_cost = request.args.get('refi_cost', default=5000, type=float)
+
+    # Get mortgage
+    if mortgage_id:
+        mortgage = Mortgage.query.filter_by(
+            id=mortgage_id, user_id=current_user.id
+        ).first()
+    else:
+        mortgage = Mortgage.query.filter_by(user_id=current_user.id).first()
+
+    if not mortgage:
+        return jsonify({
+            'savings_data': [],
+            'summary': None,
+            'mortgage_id': None,
+            'mortgage_name': None
+        })
+
+    # Get market rate if target_rate not provided
+    if target_rate is None:
+        latest_rate = MortgageRate.query.filter_by(
+            term_months=360
+        ).order_by(MortgageRate.rate_date.desc()).first()
+        target_rate = latest_rate.rate if latest_rate else 0.0294
+
+    # Use remaining term if target_term not provided
+    if target_term is None:
+        target_term = mortgage.remaining_term
+
+    # Calculate current and refinance payments
+    current_payment = calc_loan_monthly_payment(
+        mortgage.remaining_principal,
+        mortgage.original_interest_rate,
+        mortgage.remaining_term
+    )
+
+    refi_payment = calc_loan_monthly_payment(
+        mortgage.remaining_principal,
+        target_rate,
+        target_term
+    )
+
+    monthly_diff = current_payment - refi_payment
+
+    # Generate savings data points
+    savings_data = []
+    breakeven_month = None
+
+    for month in range(0, target_term + 1):
+        cumulative_savings = (monthly_diff * month) - refi_cost
+
+        savings_data.append({
+            'month': month,
+            'cumulative_savings': round(cumulative_savings, 2),
+            'monthly_diff': round(monthly_diff, 2)
+        })
+
+        # Find breakeven month
+        if breakeven_month is None and cumulative_savings >= 0:
+            breakeven_month = month
+
+    # Calculate total savings at end of term
+    total_savings_at_term = (monthly_diff * target_term) - refi_cost
+
+    summary = {
+        'current_payment': round(current_payment, 2),
+        'refi_payment': round(refi_payment, 2),
+        'monthly_savings': round(monthly_diff, 2),
+        'breakeven_month': breakeven_month,
+        'total_savings_at_term': round(total_savings_at_term, 2),
+        'refi_cost': refi_cost,
+        'current_rate': mortgage.original_interest_rate,
+        'target_rate': target_rate,
+        'target_term': target_term
+    }
+
+    return jsonify({
+        'savings_data': savings_data,
+        'summary': summary,
+        'mortgage_id': mortgage.id,
+        'mortgage_name': mortgage.name
+    })
