@@ -2,8 +2,38 @@
 from flask import current_app, render_template_string, url_for
 from flask_mail import Message
 from . import mail, db
-from .models import User, Alert, Mortgage, Trigger
+from .models import User, Alert, Mortgage, Trigger, EmailLog
 from datetime import datetime
+
+
+def log_email(email_type, recipient_email, subject, recipient_user_id=None,
+              related_entity_type=None, related_entity_id=None):
+    """Create an EmailLog entry for tracking email sends.
+
+    Args:
+        email_type: Type of email (verification, alert, payment, password_reset, cancellation)
+        recipient_email: Email address of recipient
+        subject: Email subject line
+        recipient_user_id: Optional user ID of recipient
+        related_entity_type: Optional type of related entity (e.g., 'alert', 'trigger')
+        related_entity_id: Optional ID of related entity
+
+    Returns:
+        EmailLog instance
+    """
+    email_log = EmailLog(
+        email_type=email_type,
+        recipient_email=recipient_email,
+        recipient_user_id=recipient_user_id,
+        subject=subject,
+        status='pending',
+        related_entity_type=related_entity_type,
+        related_entity_id=related_entity_id,
+        created_on=datetime.utcnow()
+    )
+    db.session.add(email_log)
+    db.session.flush()  # Get the ID without committing
+    return email_log
 
 
 def send_verification_email(user_id, verification_token):
@@ -95,12 +125,31 @@ This email was sent by RefiAlert.
             html=html_body
         )
 
+        # Log the email before sending
+        email_log = log_email(
+            email_type='verification',
+            recipient_email=user.email,
+            subject=subject,
+            recipient_user_id=user.id,
+            related_entity_type='user',
+            related_entity_id=user.id
+        )
+
         mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
         current_app.logger.info(f"Verification email sent to {user.email}")
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return False
 
 
@@ -269,12 +318,31 @@ To manage your alerts or update your preferences, please log in to your account.
             html=html_body
         )
 
+        # Log the email before sending
+        email_log = log_email(
+            email_type='alert',
+            recipient_email=user.email,
+            subject=subject,
+            recipient_user_id=user.id,
+            related_entity_type='trigger',
+            related_entity_id=trigger_id
+        )
+
         mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
         current_app.logger.info(f"Alert notification sent to {user.email} for trigger {trigger_id}")
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send notification for trigger {trigger_id}: {str(e)}")
+        # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return False
 
 
@@ -360,12 +428,30 @@ Questions? Contact us or log in to manage your alerts.
             html=html_body
         )
 
+        # Log the email before sending
+        email_log = log_email(
+            email_type='payment',
+            recipient_email=user_email,
+            subject=subject,
+            related_entity_type='alert',
+            related_entity_id=alert_id
+        )
+
         mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
         current_app.logger.info(f"Payment confirmation sent to {user_email} for alert {alert_id}")
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send payment confirmation to {user_email}: {str(e)}")
+        # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return False
 
 
@@ -455,12 +541,31 @@ This email was sent by RefiAlert.
             html=html_body
         )
 
+        # Log the email before sending
+        email_log = log_email(
+            email_type='password_reset',
+            recipient_email=user.email,
+            subject=subject,
+            recipient_user_id=user.id,
+            related_entity_type='user',
+            related_entity_id=user.id
+        )
+
         mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
         current_app.logger.info(f"Password reset email sent to {user.email}")
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return False
 
 
@@ -545,10 +650,28 @@ Questions? Contact us or log in to create a new alert.
             html=html_body
         )
 
+        # Log the email before sending
+        email_log = log_email(
+            email_type='cancellation',
+            recipient_email=user_email,
+            subject=subject,
+            related_entity_type='alert',
+            related_entity_id=alert_id
+        )
+
         mail.send(msg)
+        email_log.mark_sent()
+        db.session.commit()
         current_app.logger.info(f"Cancellation confirmation sent to {user_email} for alert {alert_id}")
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send cancellation confirmation to {user_email}: {str(e)}")
+        # Log failure if email_log was created
+        try:
+            if 'email_log' in dir():
+                email_log.mark_failed(str(e))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return False
