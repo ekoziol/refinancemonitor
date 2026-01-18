@@ -1,14 +1,16 @@
 import React, { useState, createContext, useContext } from 'react';
 import { cn } from '../../lib/utils';
-import Sidebar from './Sidebar';
+import Sidebar, { Icons } from './Sidebar';
 
 /**
  * Context for dashboard layout state management.
- * Provides sidebar collapsed state to child components.
+ * Provides sidebar collapsed state and mobile menu state to child components.
  */
 const DashboardLayoutContext = createContext({
   isSidebarCollapsed: false,
   setIsSidebarCollapsed: () => {},
+  isMobileMenuOpen: false,
+  setIsMobileMenuOpen: () => {},
 });
 
 /**
@@ -123,6 +125,111 @@ function DashboardSection({
 }
 
 /**
+ * MobileSidebar - Slide-out sidebar for mobile devices.
+ * Renders as an overlay with the sidebar content.
+ */
+function MobileSidebar({
+  isOpen,
+  onClose,
+  userName,
+  activeItemId,
+  navItems,
+  onNavigate,
+}) {
+  if (!isOpen) return null;
+
+  const handleNavClick = (item, e) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(item);
+    }
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Overlay backdrop */}
+      <div
+        className="mobile-sidebar-overlay"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar panel */}
+      <aside className="mobile-sidebar">
+        <div className="mobile-sidebar-header">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-sidebar-foreground truncate">
+              Refinance Monitor
+            </p>
+            {userName && (
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                {userName}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-sidebar-hover transition-colors"
+            aria-label="Close menu"
+          >
+            <Icons.X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="sidebar-content">
+          {navItems.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="mb-4">
+              {section.section && (
+                <div className="sidebar-section-title">
+                  {section.section}
+                </div>
+              )}
+              <nav className="sidebar-nav">
+                {section.items.map((item) => {
+                  const IconComponent = Icons[item.icon];
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.href}
+                      target={item.external ? '_blank' : undefined}
+                      rel={item.external ? 'noopener noreferrer' : undefined}
+                      onClick={(e) => handleNavClick(item, e)}
+                      className={cn(
+                        'sidebar-nav-item',
+                        activeItemId === item.id && 'sidebar-nav-item-active'
+                      )}
+                    >
+                      {IconComponent && (
+                        <IconComponent className="sidebar-nav-icon" />
+                      )}
+                      <span className="sidebar-nav-label">{item.label}</span>
+                    </a>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
+
+        <div className="sidebar-footer">
+          <a
+            href="/logout"
+            className={cn(
+              'sidebar-nav-item',
+              'text-destructive hover:text-destructive hover:bg-destructive/10'
+            )}
+          >
+            <Icons.Logout className="sidebar-nav-icon" />
+            <span className="sidebar-nav-label">Logout</span>
+          </a>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/**
  * DashboardLayout - Main layout component with glass-morphism sidebar.
  *
  * Provides a responsive dashboard layout with:
@@ -150,19 +257,59 @@ function DashboardLayout({
   className,
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(defaultCollapsed);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Get default nav items from Sidebar if not provided
+  const defaultNavItems = [
+    {
+      section: 'Dashboard',
+      items: [
+        { id: 'home', label: 'Home', icon: 'Home', href: '/dashboard' },
+        { id: 'calculator', label: 'Calculator', icon: 'Calculator', href: '/calculator/', external: true },
+        { id: 'manage', label: 'Manage', icon: 'Inbox', href: '/manage' },
+        { id: 'history', label: 'History', icon: 'Clock', href: '/history' },
+      ],
+    },
+    {
+      section: 'Settings',
+      items: [
+        { id: 'profile', label: 'Profile', icon: 'User', href: '/profile' },
+        { id: 'settings', label: 'Settings', icon: 'Settings', href: '/settings' },
+      ],
+    },
+  ];
+
+  const resolvedNavItems = navItems || defaultNavItems;
 
   return (
     <DashboardLayoutContext.Provider
-      value={{ isSidebarCollapsed, setIsSidebarCollapsed }}
+      value={{
+        isSidebarCollapsed,
+        setIsSidebarCollapsed,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
+      }}
     >
       <div className={cn('dashboard-layout dark', className)}>
+        {/* Desktop sidebar */}
         <Sidebar
           userName={userName}
           activeItemId={activeNavItem}
-          navItems={navItems}
+          navItems={resolvedNavItems}
           defaultCollapsed={defaultCollapsed}
           onNavigate={onNavigate}
         />
+
+        {/* Mobile sidebar overlay */}
+        <MobileSidebar
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          userName={userName}
+          activeItemId={activeNavItem}
+          navItems={resolvedNavItems}
+          onNavigate={onNavigate}
+        />
+
         <div
           className={cn(
             'main-content flex flex-col',
@@ -183,6 +330,7 @@ export {
   DashboardMain,
   DashboardGrid,
   DashboardSection,
+  MobileSidebar,
 };
 
 export default DashboardLayout;
