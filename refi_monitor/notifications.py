@@ -6,6 +6,104 @@ from .models import User, Alert, Mortgage, Trigger
 from datetime import datetime
 
 
+def send_verification_email(user_id, verification_token):
+    """
+    Send email verification link to newly registered user.
+
+    Args:
+        user_id: ID of the User record
+        verification_token: The verification token to include in the link
+    """
+    user = User.query.get(user_id)
+    if not user:
+        current_app.logger.error(f"User {user_id} not found")
+        return False
+
+    try:
+        verification_url = url_for(
+            'auth_bp.verify_email',
+            token=verification_token,
+            _external=True
+        )
+
+        subject = "RefiAlert: Verify Your Email Address"
+
+        html_body = render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+                .btn { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+                .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>Welcome to RefiAlert!</h1>
+                </div>
+                <div class="content">
+                    <h2>Hi {{ user_name }},</h2>
+                    <p>Thank you for signing up for RefiAlert! To complete your registration and start creating mortgage alerts, please verify your email address.</p>
+
+                    <p style="text-align: center;">
+                        <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+                    </p>
+
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="word-break: break-all; background-color: #eee; padding: 10px; border-radius: 4px;">{{ verification_url }}</p>
+
+                    <div class="warning">
+                        <strong>Note:</strong> This link will expire in 24 hours. If you didn't create an account with RefiAlert, you can safely ignore this email.
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>This email was sent by RefiAlert. If you have any questions, please contact our support team.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """,
+        user_name=user.name,
+        verification_url=verification_url
+        )
+
+        text_body = f"""
+Welcome to RefiAlert!
+
+Hi {user.name},
+
+Thank you for signing up for RefiAlert! To complete your registration and start creating mortgage alerts, please verify your email address.
+
+Click here to verify: {verification_url}
+
+Note: This link will expire in 24 hours. If you didn't create an account with RefiAlert, you can safely ignore this email.
+
+---
+This email was sent by RefiAlert.
+"""
+
+        msg = Message(
+            subject=subject,
+            recipients=[user.email],
+            body=text_body,
+            html=html_body
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Verification email sent to {user.email}")
+        return True
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        return False
+
+
 def send_alert_notification(trigger_id):
     """
     Send email notification when an alert is triggered.

@@ -5,7 +5,7 @@ from flask_login import current_user, login_user
 from . import login_manager
 from .forms import LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm
 from .models import User, PasswordResetToken, db
-from .notifications import send_password_reset_email
+from .notifications import send_password_reset_email, send_verification_email
 
 # Blueprint Configuration
 auth_bp = Blueprint(
@@ -27,10 +27,11 @@ def signup():
         if existing_user is None:
             user = User(name=form.name.data, email=form.email.data)
             user.set_password(form.password.data)
+            token = user.generate_verification_token()
             db.session.add(user)
-            db.session.commit()  # Create new user
-            login_user(user)  # Log in as newly created user
-            return redirect(url_for('main_bp.dashboard'))
+            db.session.commit()
+            send_verification_email(user.id, token)
+            return redirect(url_for('auth_bp.verification_pending'))
         flash('A user already exists with that email address.')
     return render_template(
         'signup.jinja2',
@@ -58,6 +59,9 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(password=form.password.data):
+            if not user.email_verified:
+                flash('Please verify your email before logging in.')
+                return redirect(url_for('auth_bp.resend_verification'))
             login_user(user)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main_bp.dashboard'))
@@ -146,6 +150,70 @@ def reset_password(token):
         form=form,
         title='Reset Password',
         template='reset-password-page',
+    )
+
+
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    """
+    Email verification endpoint.
+
+    Validates the token and marks user's email as verified.
+    """
+    user = User.query.filter_by(email_verification_token=token).first()
+
+    if not user:
+        flash('Invalid or expired verification link.')
+        return redirect(url_for('auth_bp.login'))
+
+    if user.verify_email_token(token):
+        db.session.commit()
+        flash('Your email has been verified. You can now log in.')
+        return redirect(url_for('auth_bp.login'))
+    else:
+        flash('Verification link has expired. Please request a new one.')
+        return redirect(url_for('auth_bp.resend_verification'))
+
+
+@auth_bp.route('/verification-pending')
+def verification_pending():
+    """
+    Page shown after signup, informing user to check their email.
+    """
+    return render_template(
+        'verification_pending.jinja2',
+        title='Verify Your Email',
+        template='verification-pending-page',
+        body="Please check your email to verify your account.",
+    )
+
+
+@auth_bp.route('/resend-verification', methods=['GET', 'POST'])
+def resend_verification():
+    """
+    Resend verification email to user.
+    """
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+
+        if user and not user.email_verified:
+            token = user.generate_verification_token()
+            db.session.commit()
+            send_verification_email(user.id, token)
+            flash('A new verification email has been sent.')
+            return redirect(url_for('auth_bp.verification_pending'))
+        elif user and user.email_verified:
+            flash('This email is already verified. You can log in.')
+            return redirect(url_for('auth_bp.login'))
+        else:
+            flash('No account found with that email address.')
+
+    return render_template(
+        'resend_verification.jinja2',
+        title='Resend Verification Email',
+        template='resend-verification-page',
+        body="Enter your email to receive a new verification link.",
     )
 
 

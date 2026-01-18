@@ -131,15 +131,16 @@ def editmortgage(m_id):
 @login_required
 def addalert():
     """
-    Log-in page for registered users.
+    Add alert page for verified users.
 
-    GET requests serve Log-in page.
-    POST requests validate and redirect user to dashboard.
+    GET requests serve add alert page.
+    POST requests validate and create alert.
     """
-    # Bypass if user is logged in
-    # if current_user.is_authenticated:
-    #     return redirect(url_for('main_bp.dashboard'))
-    # print("pass m_id: ", m_id)
+    # Block unverified users from creating alerts
+    if not current_user.email_verified:
+        flash('Please verify your email before creating alerts.')
+        return redirect(url_for('auth_bp.resend_verification'))
+
     m_id = request.args.get('m_id')
     mortgage = Mortgage.query.filter_by(id=m_id).first()
     # if mortgage is None:
