@@ -1,0 +1,12 @@
+# Minimal CI config for merge validation
+stages:
+  - test
+
+syntax-check:
+  stage: test
+  image: python:3.11-slim
+  script:
+    - python -m py_compile refi_monitor/*.py
+  only:
+    - merge_requests
+    - master
