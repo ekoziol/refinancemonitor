@@ -1,0 +1,55 @@
+{% extends "layout.jinja2" %}
+
+
+{% block content %}
+{% include 'forms.jinja2' %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='dist/img/logo.png') }}"
+        alt="logo"
+      />
+    </div>
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-warning">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert">
+            x
+          </button>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    <h1>Resend Verification Email</h1>
+
+    <form method="POST" action="{{ url_for('auth_bp.resend_verification') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <fieldset class="form-field email">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          placeholder="youremail@example.com"
+          required
+        />
+      </fieldset>
+
+      <div class="submit-button">
+        <input type="submit" value="Send Verification Email" />
+      </div>
+
+      <div class="login-signup">
+        <span>Already verified?</span>
+        <a href="{{ url_for('auth_bp.login') }}">Log in</a>
+      </div>
+
+    </form>
+  </div>
+
+{% endblock %}

@@ -139,3 +139,36 @@ class AddAlertForm(FlaskForm):
 
     mortgage_id = HiddenField(validators=[DataRequired(), Regexp('^[1-9]\d*$')])
     submit = SubmitField('Add Alert')
+
+
+class ForgotPasswordForm(FlaskForm):
+    """Form for requesting a password reset."""
+
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(),
+            Email(message='Enter a valid email.'),
+        ],
+    )
+    submit = SubmitField('Send Reset Link')
+
+
+class ResetPasswordForm(FlaskForm):
+    """Form for resetting password with token."""
+
+    password = PasswordField(
+        'New Password',
+        validators=[
+            DataRequired(),
+            Length(min=6, message='Select a stronger password.'),
+        ],
+    )
+    confirm = PasswordField(
+        'Confirm New Password',
+        validators=[
+            DataRequired(),
+            EqualTo('password', message='Passwords must match.'),
+        ],
+    )
+    submit = SubmitField('Reset Password')

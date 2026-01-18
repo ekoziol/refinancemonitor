@@ -1,6 +1,8 @@
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+from datetime import datetime, timedelta
 
 
 class User(UserMixin, db.Model):
@@ -19,6 +21,9 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), unique=True, nullable=True)
+    token_expiry = db.Column(db.DateTime, nullable=True)
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):
@@ -28,6 +33,29 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+
+    def generate_verification_token(self):
+        """Generate email verification token with 24-hour expiry."""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.token_expiry = datetime.utcnow() + timedelta(hours=24)
+        return self.email_verification_token
+
+    def verify_email_token(self, token):
+        """Verify the email token and mark email as verified."""
+        if (self.email_verification_token == token and
+                self.token_expiry and
+                datetime.utcnow() < self.token_expiry):
+            self.email_verified = True
+            self.email_verification_token = None
+            self.token_expiry = None
+            return True
+        return False
+
+    def is_token_expired(self):
+        """Check if the verification token has expired."""
+        if not self.token_expiry:
+            return True
+        return datetime.utcnow() >= self.token_expiry
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
@@ -78,6 +106,7 @@ class Alert(db.Model):
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    deleted_at = db.Column(db.DateTime, index=True, unique=False, nullable=True)
 
     initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True)
     payment_status = db.Column(db.String, index=False, unique=False, nullable=True)
@@ -90,6 +119,8 @@ class Alert(db.Model):
     price_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_customer_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
+    paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    stripe_subscription_id = db.Column(db.String, index=False, unique=False, nullable=True)
     triggers = db.relationship("Trigger")
 
 
@@ -128,3 +159,35 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class PasswordResetToken(db.Model):
+    """Token for secure password reset."""
+
+    __tablename__ = 'password_reset_token'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    created_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    expires_on = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('reset_tokens', lazy='dynamic'))
+
+    def __init__(self, user_id, expires_hours=1):
+        self.user_id = user_id
+        self.token = secrets.token_urlsafe(32)
+        self.created_on = datetime.utcnow()
+        self.expires_on = self.created_on + timedelta(hours=expires_hours)
+        self.used = False
+
+    def is_valid(self):
+        """Check if token is still valid (not expired and not used)."""
+        return not self.used and datetime.utcnow() < self.expires_on
+
+    def mark_used(self):
+        """Mark token as used."""
+        self.used = True
+
+    def __repr__(self):
+        return '<PasswordResetToken {} for user {}>'.format(self.token[:8], self.user_id)
