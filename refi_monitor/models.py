@@ -128,3 +128,83 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class Subscription(db.Model):
+    """Subscription model for separating payment logic from Alert."""
+
+    __tablename__ = 'subscription'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Stripe integration
+    stripe_customer_id = db.Column(db.String(100), nullable=False, index=True)
+    stripe_subscription_id = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    stripe_price_id = db.Column(db.String(100), nullable=False)
+
+    # Subscription status
+    status = db.Column(db.String(50), nullable=False, default='incomplete', index=True)
+
+    # Billing periods (Unix timestamps)
+    current_period_start = db.Column(db.Integer, nullable=True)
+    current_period_end = db.Column(db.Integer, nullable=True)
+    trial_start = db.Column(db.Integer, nullable=True)
+    trial_end = db.Column(db.Integer, nullable=True)
+    canceled_at = db.Column(db.Integer, nullable=True)
+    ended_at = db.Column(db.Integer, nullable=True)
+
+    # Pricing
+    amount = db.Column(db.Integer, nullable=False)  # In cents
+    currency = db.Column(db.String(3), nullable=False, default='usd')
+    interval = db.Column(db.String(20), nullable=False, default='month')
+
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    # Relationships
+    user = db.relationship('User', backref='subscriptions')
+    alert = db.relationship('Alert', backref=db.backref('subscription', uselist=False))
+    invoices = db.relationship('Invoice', backref='subscription', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return '<Subscription {} for Alert {}>'.format(self.id, self.alert_id)
+
+
+class Invoice(db.Model):
+    """Invoice model for tracking payment invoices."""
+
+    __tablename__ = 'invoice'
+    id = db.Column(db.Integer, primary_key=True)
+    subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Stripe details
+    stripe_invoice_id = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    stripe_payment_intent_id = db.Column(db.String(100), nullable=True)
+
+    # Invoice details
+    amount_due = db.Column(db.Integer, nullable=False)  # In cents
+    amount_paid = db.Column(db.Integer, nullable=False, default=0)
+    currency = db.Column(db.String(3), nullable=False, default='usd')
+
+    # Status
+    status = db.Column(db.String(50), nullable=False, default='draft', index=True)
+
+    # Timestamps
+    invoice_date = db.Column(db.DateTime, nullable=False)
+    due_date = db.Column(db.DateTime, nullable=True)
+    paid_at = db.Column(db.DateTime, nullable=True)
+
+    # Invoice URLs
+    invoice_pdf_url = db.Column(db.String(500), nullable=True)
+    hosted_invoice_url = db.Column(db.String(500), nullable=True)
+
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    # Relationships
+    user = db.relationship('User', backref='invoices')
+
+    def __repr__(self):
+        return '<Invoice {} for Subscription {}>'.format(self.stripe_invoice_id, self.subscription_id)
