@@ -1,11 +1,9 @@
-export { default as ChartWrapper } from './ChartWrapper';
+export { Sidebar, Icons } from './Sidebar';
 export {
-  Sidebar,
-  Icons,
   DashboardLayout,
   DashboardHeader,
   DashboardMain,
   DashboardGrid,
   DashboardSection,
   useDashboardLayout,
-} from './layout';
+} from './DashboardLayout';
