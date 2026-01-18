@@ -128,3 +128,31 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class EmailLog(db.Model):
+    """Email logging model for tracking all sent emails."""
+
+    __tablename__ = 'email_log'
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_email = db.Column(db.String(255), nullable=False, index=True)
+    subject = db.Column(db.String(500), nullable=False)
+    email_type = db.Column(db.String(50), nullable=False, index=True)
+    trigger_id = db.Column(db.Integer, db.ForeignKey('trigger.id'), nullable=True)
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
+    status = db.Column(db.String(20), nullable=False, default='sent', index=True)
+    error_message = db.Column(db.Text, nullable=True)
+    sent_at = db.Column(db.DateTime, nullable=True, index=True)
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    __table_args__ = (
+        db.Index('ix_email_log_type_status', 'email_type', 'status'),
+        db.Index('ix_email_log_recipient_sent', 'recipient_email', 'sent_at'),
+    )
+
+    def __repr__(self):
+        return '<EmailLog {} to {} at {}>'.format(
+            self.email_type, self.recipient_email, self.sent_at
+        )
