@@ -1,3 +1,4 @@
+export { default as AlertCard } from './AlertCard';
 export { default as ChartWrapper } from './ChartWrapper';
 export { default as MetricCards } from './MetricCards';
 export { default as SavingsImpactChart } from './SavingsImpactChart';

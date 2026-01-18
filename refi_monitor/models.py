@@ -278,6 +278,24 @@ class PasswordResetToken(db.Model):
         return '<PasswordResetToken {} for user {}>'.format(self.token[:8], self.user_id)
 
 
+class UserPreference(db.Model):
+    """User preferences for reports and notifications."""
+
+    __tablename__ = 'user_preference'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    monthly_report_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    weekly_digest_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    theme = db.Column(db.String(20), default='light', nullable=False)
+    created_on = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_on = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('preferences', uselist=False, lazy='joined'))
+
+    def __repr__(self):
+        return '<UserPreference {} for user {}>'.format(self.id, self.user_id)
+
+
 class EmailLog(db.Model):
     """Log of all emails sent by the system."""
 

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
-const spinnerVariants = cva('animate-spin text-gray-500', {
+const spinnerVariants = cva('animate-spin text-muted-foreground', {
   variants: {
     size: {
       sm: 'h-4 w-4',

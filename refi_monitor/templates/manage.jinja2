@@ -3,7 +3,32 @@
 {% block pagecontent %}
 <b><h1 class="text-4xl text-center text-gray-800">Manage Mortgages and Alerts</h1></b>
 
-<table class="ml-72 mt-16">
+<!-- Status Filter -->
+<div class="ml-72 mt-8 mb-4">
+  <span class="text-gray-400 mr-4">Filter by status:</span>
+  <a href="{{ url_for('main_bp.manage') }}"
+     class="px-3 py-1 mx-1 text-sm rounded-full {% if not status_filter %}bg-blue-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
+    All
+  </a>
+  <a href="{{ url_for('main_bp.manage', status='active') }}"
+     class="px-3 py-1 mx-1 text-sm rounded-full {% if status_filter == 'active' %}bg-green-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
+    ● Active
+  </a>
+  <a href="{{ url_for('main_bp.manage', status='waiting') }}"
+     class="px-3 py-1 mx-1 text-sm rounded-full {% if status_filter == 'waiting' %}bg-yellow-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
+    ◐ Waiting
+  </a>
+  <a href="{{ url_for('main_bp.manage', status='triggered') }}"
+     class="px-3 py-1 mx-1 text-sm rounded-full {% if status_filter == 'triggered' %}bg-orange-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
+    ⚡ Triggered
+  </a>
+  <a href="{{ url_for('main_bp.manage', status='paused') }}"
+     class="px-3 py-1 mx-1 text-sm rounded-full {% if status_filter == 'paused' %}bg-red-600 text-white{% else %}bg-gray-700 text-gray-300 hover:bg-gray-600{% endif %}">
+    ⏸ Paused
+  </a>
+</div>
+
+<table class="ml-72 mt-8">
 
 {% for ma in mortgage_alerts %}
     {% set m = ma[0] %}
