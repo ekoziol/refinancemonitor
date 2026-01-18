@@ -1,0 +1,47 @@
+{% extends "layout.jinja2" %}
+
+
+{% block content %}
+{% include 'forms.jinja2' %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='dist/img/logo.png') }}"
+        alt="logo"
+      />
+    </div>
+
+    {% for message in get_flashed_messages() %}
+      <div class="alert alert-warning">
+        <button
+          type="button"
+          class="close"
+          data-dismiss="alert">
+            x
+          </button>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    <h1>Check Your Email</h1>
+
+    <div class="verification-message">
+      <p>We've sent a verification link to your email address.</p>
+      <p>Please check your inbox and click the link to verify your account.</p>
+      <p>The link will expire in 24 hours.</p>
+    </div>
+
+    <div class="login-signup">
+      <span>Didn't receive the email?</span>
+      <a href="{{ url_for('auth_bp.resend_verification') }}">Resend verification email</a>
+    </div>
+
+    <div class="login-signup">
+      <span>Already verified?</span>
+      <a href="{{ url_for('auth_bp.login') }}">Log in</a>
+    </div>
+
+  </div>
+
+{% endblock %}

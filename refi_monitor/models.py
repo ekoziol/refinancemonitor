@@ -1,6 +1,8 @@
 from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+from datetime import datetime, timedelta
 
 
 class User(UserMixin, db.Model):
@@ -19,6 +21,9 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), unique=True, nullable=True)
+    token_expiry = db.Column(db.DateTime, nullable=True)
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):
@@ -28,6 +33,29 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Check hashed password."""
         return check_password_hash(self.password, password)
+
+    def generate_verification_token(self):
+        """Generate email verification token with 24-hour expiry."""
+        self.email_verification_token = secrets.token_urlsafe(32)
+        self.token_expiry = datetime.utcnow() + timedelta(hours=24)
+        return self.email_verification_token
+
+    def verify_email_token(self, token):
+        """Verify the email token and mark email as verified."""
+        if (self.email_verification_token == token and
+                self.token_expiry and
+                datetime.utcnow() < self.token_expiry):
+            self.email_verified = True
+            self.email_verification_token = None
+            self.token_expiry = None
+            return True
+        return False
+
+    def is_token_expired(self):
+        """Check if the verification token has expired."""
+        if not self.token_expiry:
+            return True
+        return datetime.utcnow() >= self.token_expiry
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
