@@ -17,3 +17,15 @@ export {
   badgeVariants,
   Input,
 } from './ui';
+
+// Layout components
+export {
+  Sidebar,
+  Icons,
+  DashboardLayout,
+  DashboardHeader,
+  DashboardMain,
+  DashboardGrid,
+  DashboardSection,
+  useDashboardLayout,
+} from './layout';
