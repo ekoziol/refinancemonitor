@@ -7,8 +7,9 @@ from datetime import datetime
 from . import db
 from .models import Alert, Trigger, Mortgage, User, Subscription
 from .calc import calc_loan_monthly_payment
-from .notifications import send_alert_notification
+from .notifications import send_alert_notification, send_monthly_report_email
 from .rate_updater import RateUpdater
+from .report_aggregator import ReportDataAggregationService
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,45 @@ def scheduled_rate_update():
             )
         except Exception as e:
             logger.error(f"Scheduled rate update failed: {e}")
+            logger.exception("Full traceback:")
+
+
+def scheduled_monthly_report():
+    """
+    Scheduled task function that sends monthly refinancing reports to users.
+
+    This function is called by APScheduler on the 1st of each month.
+    It generates and sends personalized reports to users with active paid alerts.
+    """
+    from . import init_app
+
+    # Create app context for database access
+    app = init_app()
+    with app.app_context():
+        logger.info("Running scheduled monthly report generation...")
+        try:
+            service = ReportDataAggregationService(days=30)
+            reports = service.generate_bulk_reports()
+
+            sent_count = 0
+            failed_count = 0
+
+            for report in reports:
+                try:
+                    if send_monthly_report_email(report):
+                        sent_count += 1
+                    else:
+                        failed_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to send report to user {report.user_id}: {e}")
+                    failed_count += 1
+
+            logger.info(
+                f"Monthly report job complete: "
+                f"sent={sent_count}, failed={failed_count}"
+            )
+        except Exception as e:
+            logger.error(f"Scheduled monthly report failed: {e}")
             logger.exception("Full traceback:")
 
 
@@ -182,6 +222,7 @@ def init_scheduler(app: Flask):
     The scheduler is configured to run:
     - Daily rate updates at configured time (default 9:00 AM EST)
     - Alert checks every 4 hours and daily at 9 AM
+    - Monthly reports on the 1st of each month at 8 AM EST
     """
     global scheduler
 
@@ -229,6 +270,20 @@ def init_scheduler(app: Flask):
         replace_existing=True
     )
 
+    # Schedule monthly reports on the 1st of each month at 8 AM
+    scheduler.add_job(
+        func=scheduled_monthly_report,
+        trigger=CronTrigger(
+            day=1,
+            hour=8,
+            minute=0,
+            timezone='America/New_York'
+        ),
+        id='monthly_report',
+        name='Send monthly refinancing reports',
+        replace_existing=True
+    )
+
     # Start the scheduler
     scheduler.start()
     logger.info(
@@ -236,6 +291,7 @@ def init_scheduler(app: Flask):
         f"{schedule_hour:02d}:{schedule_minute:02d} EST"
     )
     logger.info(f"Alert checks scheduled: daily at 9 AM and every 4 hours")
+    logger.info("Monthly reports scheduled: 1st of each month at 8 AM EST")
 
     # Shutdown scheduler when app terminates
     import atexit
