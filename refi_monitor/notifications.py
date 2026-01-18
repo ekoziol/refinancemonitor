@@ -2,8 +2,44 @@
 from flask import current_app, render_template_string
 from flask_mail import Message
 from . import mail, db
-from .models import User, Alert, Mortgage, Trigger
+from .models import User, Alert, Mortgage, Trigger, EmailLog
 from datetime import datetime
+
+
+def log_email(recipient_email, email_type, subject, status, user_id=None,
+              alert_id=None, trigger_id=None, error_message=None):
+    """
+    Log an email send attempt to the database.
+
+    Args:
+        recipient_email: Email address of the recipient
+        email_type: Type of email (alert_notification, payment_confirmation)
+        subject: Email subject line
+        status: Delivery status (sent, failed)
+        user_id: Optional user ID
+        alert_id: Optional alert ID
+        trigger_id: Optional trigger ID
+        error_message: Optional error message if failed
+
+    Returns:
+        EmailLog: The created email log record
+    """
+    email_log = EmailLog(
+        recipient_email=recipient_email,
+        email_type=email_type,
+        subject=subject,
+        status=status,
+        user_id=user_id,
+        alert_id=alert_id,
+        trigger_id=trigger_id,
+        error_message=error_message,
+        sent_at=datetime.utcnow() if status == 'sent' else None,
+        created_on=datetime.utcnow(),
+        updated_on=datetime.utcnow()
+    )
+    db.session.add(email_log)
+    db.session.commit()
+    return email_log
 
 
 def send_alert_notification(trigger_id):
@@ -173,10 +209,33 @@ To manage your alerts or update your preferences, please log in to your account.
 
         mail.send(msg)
         current_app.logger.info(f"Alert notification sent to {user.email} for trigger {trigger_id}")
+
+        # Log successful email
+        log_email(
+            recipient_email=user.email,
+            email_type='alert_notification',
+            subject=subject,
+            status='sent',
+            user_id=user.id,
+            alert_id=alert.id,
+            trigger_id=trigger_id
+        )
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send notification for trigger {trigger_id}: {str(e)}")
+
+        # Log failed email
+        log_email(
+            recipient_email=user.email if user else 'unknown',
+            email_type='alert_notification',
+            subject=subject if 'subject' in dir() else 'Alert Notification',
+            status='failed',
+            user_id=user.id if user else None,
+            alert_id=alert.id if alert else None,
+            trigger_id=trigger_id,
+            error_message=str(e)
+        )
         return False
 
 
@@ -264,8 +323,27 @@ Questions? Contact us or log in to manage your alerts.
 
         mail.send(msg)
         current_app.logger.info(f"Payment confirmation sent to {user_email} for alert {alert_id}")
+
+        # Log successful email
+        log_email(
+            recipient_email=user_email,
+            email_type='payment_confirmation',
+            subject=subject,
+            status='sent',
+            alert_id=alert_id
+        )
         return True
 
     except Exception as e:
         current_app.logger.error(f"Failed to send payment confirmation to {user_email}: {str(e)}")
+
+        # Log failed email
+        log_email(
+            recipient_email=user_email,
+            email_type='payment_confirmation',
+            subject=subject if 'subject' in dir() else 'Payment Confirmation',
+            status='failed',
+            alert_id=alert_id,
+            error_message=str(e)
+        )
         return False

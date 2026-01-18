@@ -128,3 +128,29 @@ class MortgageRate(db.Model):
         return '<MortgageRate {}: {} for {}-month term on {}>'.format(
             self.zip_code, self.rate, self.term_months, self.rate_date
         )
+
+
+class EmailLog(db.Model):
+    """Email log model for tracking sent emails and delivery status."""
+
+    __tablename__ = 'email_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id'), nullable=True)
+    trigger_id = db.Column(db.Integer, db.ForeignKey('trigger.id'), nullable=True)
+
+    recipient_email = db.Column(db.String(255), nullable=False, index=True)
+    email_type = db.Column(db.String(50), nullable=False, index=True)
+    subject = db.Column(db.String(255), nullable=False)
+
+    status = db.Column(db.String(20), nullable=False, default='pending', index=True)
+    error_message = db.Column(db.Text, nullable=True)
+
+    sent_at = db.Column(db.DateTime, index=True, nullable=True)
+    created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+
+    def __repr__(self):
+        return '<EmailLog {} to {} - {}>'.format(
+            self.email_type, self.recipient_email, self.status
+        )
