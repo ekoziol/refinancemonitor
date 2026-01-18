@@ -217,3 +217,46 @@ class PasswordResetToken(db.Model):
 
     def __repr__(self):
         return '<PasswordResetToken {} for user {}>'.format(self.token[:8], self.user_id)
+
+
+class EmailLog(db.Model):
+    """Log of all emails sent by the system."""
+
+    __tablename__ = 'email_log'
+    id = db.Column(db.Integer, primary_key=True)
+    email_type = db.Column(db.String(50), nullable=False, index=True)
+    recipient_email = db.Column(db.String(255), nullable=False, index=True)
+    recipient_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)
+    subject = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending', index=True)
+    error_message = db.Column(db.Text, nullable=True)
+    related_entity_type = db.Column(db.String(50), nullable=True)
+    related_entity_id = db.Column(db.Integer, nullable=True)
+    sent_at = db.Column(db.DateTime, nullable=True)
+    delivered_at = db.Column(db.DateTime, nullable=True)
+    created_on = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('email_logs', lazy='dynamic'))
+
+    __table_args__ = (
+        db.Index('ix_email_log_type_status', 'email_type', 'status'),
+        db.Index('ix_email_log_entity', 'related_entity_type', 'related_entity_id'),
+    )
+
+    def mark_sent(self):
+        """Mark email as successfully sent."""
+        self.status = 'sent'
+        self.sent_at = datetime.utcnow()
+
+    def mark_failed(self, error_message):
+        """Mark email as failed with error message."""
+        self.status = 'failed'
+        self.error_message = error_message
+
+    def mark_delivered(self):
+        """Mark email as delivered."""
+        self.status = 'delivered'
+        self.delivered_at = datetime.utcnow()
+
+    def __repr__(self):
+        return '<EmailLog {} to {} ({})>'.format(self.email_type, self.recipient_email, self.status)
