@@ -8,6 +8,92 @@ import plotly.express as px
 from .calc import *
 
 
+def mortgage_balance_chart(m_id):
+    """Generate a chart showing mortgage principal paydown over time.
+
+    Args:
+        m_id: Mortgage ID to generate chart for
+
+    Returns:
+        HTML string containing the Plotly chart
+    """
+    mortgage = Mortgage.query.filter_by(id=m_id).first()
+    if not mortgage:
+        return None
+
+    # Create mortgage amortization table
+    # Note: original_interest_rate is stored as percentage (e.g., 4.5 for 4.5%)
+    df = create_mortgage_table(
+        mortgage.original_principal,
+        mortgage.original_interest_rate / 100,
+        mortgage.original_term
+    )
+
+    # Convert months to years for x-axis display
+    df['year'] = df['month'] / 12
+
+    fig = go.Figure()
+
+    # Main balance line
+    fig.add_trace(
+        go.Scatter(
+            x=df['year'],
+            y=df['amount_remaining'],
+            mode='lines',
+            name='Principal Balance',
+            line=dict(color='#1f77b4', width=2),
+            fill='tozeroy',
+            fillcolor='rgba(31, 119, 180, 0.2)',
+        )
+    )
+
+    # Add marker for current position if remaining_term differs from original_term
+    months_paid = mortgage.original_term - mortgage.remaining_term
+    if months_paid > 0:
+        current_balance = df.loc[df['month'] == months_paid, 'amount_remaining']
+        if not current_balance.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=[months_paid / 12],
+                    y=[current_balance.values[0]],
+                    mode='markers',
+                    name='Current Position',
+                    marker=dict(color='#ff9e00', size=10, symbol='circle'),
+                )
+            )
+
+    fig.update_layout(
+        title='Principal Balance Over Time',
+        xaxis_title='Years',
+        yaxis_title='Principal Balance ($)',
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        yaxis=dict(
+            tickprefix='$',
+            tickformat=',.',
+            gridcolor='rgba(128, 128, 128, 0.2)',
+        ),
+        xaxis=dict(
+            gridcolor='rgba(128, 128, 128, 0.2)',
+        ),
+        showlegend=True,
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='right',
+            x=1
+        ),
+    )
+
+    return fig.to_html(
+        full_html=False,
+        default_height=300,
+        default_width=600,
+        config={'displayModeBar': False},
+    )
+
+
 def time_target_plot(m_id):
     mortgage = Mortgage.query.filter_by(id=m_id).first()
     alert = Alert.query.filter_by(mortgage_id=m_id, initial_payment=True, deleted_at=None).first()
