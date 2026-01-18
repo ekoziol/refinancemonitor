@@ -77,6 +77,64 @@ def users():
     )
 
 
+EMAILS_PER_PAGE = 50
+
+
+@admin_bp.route('/email-logs')
+@login_required
+@admin_required
+def email_logs():
+    """List all email logs with search and filtering.
+
+    Supports filtering by email type, status, and search by recipient.
+    """
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '', type=str).strip()
+    type_filter = request.args.get('type', '', type=str)
+    status_filter = request.args.get('status', '', type=str)
+
+    query = EmailLog.query
+
+    # Search by recipient email
+    if search:
+        search_pattern = f'%{search}%'
+        query = query.filter(EmailLog.recipient_email.ilike(search_pattern))
+
+    # Filter by email type
+    if type_filter:
+        query = query.filter(EmailLog.email_type == type_filter)
+
+    # Filter by status
+    if status_filter:
+        query = query.filter(EmailLog.status == status_filter)
+
+    # Order by most recent first
+    query = query.order_by(EmailLog.created_on.desc())
+
+    # Paginate results
+    pagination = query.paginate(page=page, per_page=EMAILS_PER_PAGE, error_out=False)
+    logs = pagination.items
+
+    # Get distinct email types and statuses for filter dropdowns
+    email_types = db.session.query(EmailLog.email_type).distinct().order_by(EmailLog.email_type).all()
+    email_types = [t[0] for t in email_types]
+    statuses = db.session.query(EmailLog.status).distinct().order_by(EmailLog.status).all()
+    statuses = [s[0] for s in statuses]
+
+    return render_template(
+        'admin/email_logs.jinja2',
+        title='Email Logs',
+        logs=logs,
+        pagination=pagination,
+        search=search,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        email_types=email_types,
+        statuses=statuses,
+        current_user=current_user
+    )
+
+
 @admin_bp.route('/users/<int:user_id>')
 @login_required
 @admin_required
