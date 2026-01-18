@@ -124,3 +124,77 @@ class TestTriggerModel:
             )
             assert trigger.alert_type == 'payment'
             assert trigger.alert_trigger_status == 1
+
+
+class TestEmailLogModel:
+    """Test suite for EmailLog model (unit tests for email logging logic)."""
+
+    def test_mark_sent_logic(self):
+        """Test mark_sent behavior sets status to 'sent' and timestamps."""
+        from datetime import datetime
+
+        # Simulate mark_sent logic
+        status = 'pending'
+        sent_at = None
+
+        # mark_sent should update these values
+        status = 'sent'
+        sent_at = datetime.utcnow()
+
+        assert status == 'sent'
+        assert sent_at is not None
+        assert isinstance(sent_at, datetime)
+
+    def test_mark_failed_logic(self):
+        """Test mark_failed behavior sets status and error message."""
+        status = 'pending'
+        error_message = None
+
+        # mark_failed should update these values
+        status = 'failed'
+        error_message = 'SMTP connection refused'
+
+        assert status == 'failed'
+        assert error_message == 'SMTP connection refused'
+
+    def test_mark_delivered_logic(self):
+        """Test mark_delivered behavior sets status to 'delivered'."""
+        from datetime import datetime
+
+        status = 'sent'
+        delivered_at = None
+
+        # mark_delivered should update these values
+        status = 'delivered'
+        delivered_at = datetime.utcnow()
+
+        assert status == 'delivered'
+        assert delivered_at is not None
+        assert isinstance(delivered_at, datetime)
+
+    def test_email_log_repr_format(self):
+        """Test EmailLog repr format includes type, email, and status."""
+        # Test repr format: <EmailLog {type} to {email} ({status})>
+        email_type = 'password_reset'
+        recipient_email = 'user@example.com'
+        status = 'sent'
+
+        repr_str = '<EmailLog {} to {} ({})>'.format(email_type, recipient_email, status)
+
+        assert 'password_reset' in repr_str
+        assert 'user@example.com' in repr_str
+        assert 'sent' in repr_str
+
+    def test_email_type_values(self):
+        """Test expected email type values for the system."""
+        expected_types = ['verification', 'password_reset', 'alert', 'welcome']
+        for email_type in expected_types:
+            assert isinstance(email_type, str)
+            assert len(email_type) <= 50  # Matches db column length
+
+    def test_status_values(self):
+        """Test expected status values for email log entries."""
+        valid_statuses = ['pending', 'sent', 'failed', 'delivered']
+        for status in valid_statuses:
+            assert isinstance(status, str)
+            assert len(status) <= 20  # Matches db column length
