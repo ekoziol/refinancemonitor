@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     last_paid_date = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     paid = db.Column(db.Integer, index=False, unique=False, nullable=True)
+    report_frequency = db.Column(
+        db.String(10), index=False, unique=False, nullable=False, default='none'
+    )
     mortgages = db.relationship("Mortgage")
 
     def set_password(self, password):

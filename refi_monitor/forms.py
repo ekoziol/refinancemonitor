@@ -139,3 +139,18 @@ class AddAlertForm(FlaskForm):
 
     mortgage_id = HiddenField(validators=[DataRequired(), Regexp('^[1-9]\d*$')])
     submit = SubmitField('Add Alert')
+
+
+class UserPreferencesForm(FlaskForm):
+    """User preferences form for report frequency settings."""
+
+    report_frequency = RadioField(
+        'Report Frequency',
+        choices=[
+            ('none', 'No Reports'),
+            ('weekly', 'Weekly'),
+            ('monthly', 'Monthly'),
+        ],
+        validators=[DataRequired()],
+    )
+    submit = SubmitField('Save Preferences')

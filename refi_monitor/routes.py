@@ -1,11 +1,14 @@
 """Routes for parent Flask app."""
 import os
-from flask import render_template, jsonify
+from datetime import datetime
+from flask import render_template, jsonify, flash, request
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
+from . import db
 from .models import Mortgage, Alert
+from .forms import UserPreferencesForm
 from .plots import *
 from .scheduler import trigger_manual_check
 
@@ -113,6 +116,31 @@ def manage():
         mortgages=mortgages,
         alerts=alerts,
         mortgage_alerts=mortgage_alerts,
+    )
+
+
+@main_bp.route('/preferences', methods=['GET', 'POST'])
+@login_required
+def preferences():
+    """User preferences page for report frequency settings."""
+    form = UserPreferencesForm()
+
+    if form.validate_on_submit():
+        current_user.report_frequency = form.report_frequency.data
+        current_user.updated_on = datetime.now()
+        db.session.commit()
+        flash('Preferences saved successfully!', 'success')
+        return redirect(url_for('main_bp.preferences'))
+
+    # Pre-populate form with current preference
+    form.report_frequency.data = current_user.report_frequency or 'none'
+
+    return render_template(
+        'preferences.jinja2',
+        title='Report Preferences',
+        template='preferences-template',
+        current_user=current_user,
+        form=form,
     )
 
 
