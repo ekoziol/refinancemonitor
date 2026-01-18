@@ -2,7 +2,7 @@
 import os
 import time
 from datetime import datetime, timedelta
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
@@ -96,6 +96,10 @@ def dashboard():
 def manage():
     """Logged-in User Dashboard."""
 
+    # Get status filter from query params
+    status_filter = request.args.get('status', None)
+    valid_statuses = ['active', 'paused', 'triggered', 'waiting']
+
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     mortgage_ids = [m.id for m in mortgages]
     alerts = Alert.query.join(Subscription).filter(
@@ -110,11 +114,16 @@ def manage():
         matched = 0
         for a in alerts:
             if m.id == a.mortgage_id:
+                # Apply status filter if specified
+                if status_filter and status_filter in valid_statuses:
+                    if a.get_status() != status_filter:
+                        continue
                 mortgage_alerts.append(
                     [m, a, status_target_payment_plot(m.id), time_target_plot(m.id)]
                 )
                 matched += 1
-        if matched == 0:
+        # Only show "no alert" placeholder if no filter is active
+        if matched == 0 and not status_filter:
             mortgage_alerts.append([m, None, None, None])
 
     return render_template(
@@ -126,6 +135,7 @@ def manage():
         mortgages=mortgages,
         alerts=alerts,
         mortgage_alerts=mortgage_alerts,
+        status_filter=status_filter,
     )
 
 

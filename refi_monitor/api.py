@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 import stripe
 from . import db
-from .models import User, Mortgage, Alert, MortgageRate, EmailLog, Trigger, Subscription
+from .models import User, Mortgage, Alert, MortgageRate, EmailLog, Trigger, Subscription, UserPreference
 from .calc import calc_loan_monthly_payment
 from .scheduler import get_scheduler_status
 from .notifications import send_cancellation_confirmation
@@ -246,6 +246,48 @@ def update_alert(alert_id):
 
     alert.updated_on = datetime.utcnow()
     db.session.commit()
+    return jsonify(alert_to_dict(alert))
+
+
+@api_bp.route('/alerts/<int:alert_id>', methods=['PATCH'])
+@login_required
+def patch_alert(alert_id):
+    """Partially update an alert's threshold values.
+
+    Accepts partial updates for threshold fields only:
+    - target_monthly_payment
+    - target_interest_rate
+    - target_term
+    - estimate_refinance_cost
+    """
+    alert = Alert.query.filter_by(id=alert_id, deleted_at=None).first()
+    if not alert:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    mortgage = Mortgage.query.filter_by(id=alert.mortgage_id, user_id=current_user.id).first()
+    if not mortgage:
+        return jsonify({'error': 'Alert not found'}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Only allow threshold fields to be updated via PATCH
+    threshold_fields = ['target_monthly_payment', 'target_interest_rate',
+                        'target_term', 'estimate_refinance_cost']
+
+    updated_fields = []
+    for field in threshold_fields:
+        if field in data:
+            setattr(alert, field, data[field])
+            updated_fields.append(field)
+
+    if not updated_fields:
+        return jsonify({'error': 'No valid threshold fields provided'}), 400
+
+    alert.updated_on = datetime.utcnow()
+    db.session.commit()
+
     return jsonify(alert_to_dict(alert))
 
 
@@ -1287,3 +1329,68 @@ def get_report_preview():
         'rate_statistics': rate_stats_dict,
         'savings_opportunities': savings_list
     })
+
+
+# ============ User Preferences Endpoints ============
+
+def preference_to_dict(preference):
+    """Convert UserPreference model to dictionary."""
+    return {
+        'id': preference.id,
+        'user_id': preference.user_id,
+        'monthly_report_enabled': preference.monthly_report_enabled,
+        'weekly_digest_enabled': preference.weekly_digest_enabled,
+        'theme': preference.theme,
+        'created_on': preference.created_on.isoformat() if preference.created_on else None,
+        'updated_on': preference.updated_on.isoformat() if preference.updated_on else None,
+    }
+
+
+@api_bp.route('/preferences', methods=['GET'])
+@login_required
+def get_preferences():
+    """Get current user preferences. Creates default preferences if none exist."""
+    preference = UserPreference.query.filter_by(user_id=current_user.id).first()
+
+    if not preference:
+        preference = UserPreference(
+            user_id=current_user.id,
+            monthly_report_enabled=True,
+            weekly_digest_enabled=False,
+            theme='light',
+            created_on=datetime.utcnow(),
+            updated_on=datetime.utcnow()
+        )
+        db.session.add(preference)
+        db.session.commit()
+
+    return jsonify(preference_to_dict(preference))
+
+
+@api_bp.route('/preferences', methods=['PUT'])
+@login_required
+def update_preferences():
+    """Update current user preferences."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    preference = UserPreference.query.filter_by(user_id=current_user.id).first()
+
+    if not preference:
+        preference = UserPreference(
+            user_id=current_user.id,
+            created_on=datetime.utcnow()
+        )
+        db.session.add(preference)
+
+    updatable_fields = ['monthly_report_enabled', 'weekly_digest_enabled', 'theme']
+    for field in updatable_fields:
+        if field in data:
+            if field == 'theme' and data[field] not in ['light', 'dark', 'system']:
+                return jsonify({'error': 'Invalid theme value. Must be light, dark, or system.'}), 400
+            setattr(preference, field, data[field])
+
+    preference.updated_on = datetime.utcnow()
+    db.session.commit()
+    return jsonify(preference_to_dict(preference))

@@ -7,10 +7,10 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-gray-200 bg-white text-gray-950',
+        default: 'border-border bg-background text-foreground',
         destructive:
-          'destructive group border-red-500 bg-red-500 text-gray-50',
-        success: 'border-green-500 bg-green-500 text-gray-50',
+          'destructive group border-destructive bg-destructive text-destructive-foreground',
+        success: 'border-success bg-success text-success-foreground',
       },
     },
     defaultVariants: {
@@ -54,7 +54,7 @@ const ToastClose = React.forwardRef(({ className, onClick, ...props }, ref) => (
   <button
     ref={ref}
     className={cn(
-      'absolute right-1 top-1 rounded-md p-1 text-gray-950/50 opacity-0 transition-opacity hover:text-gray-950 focus:opacity-100 focus:outline-none group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50',
+      'absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none group-hover:opacity-100 group-[.destructive]:text-destructive-foreground/70 group-[.destructive]:hover:text-destructive-foreground',
       className
     )}
     onClick={onClick}

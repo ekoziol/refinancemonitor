@@ -66,3 +66,4 @@ export {
   SheetDescription,
 } from './sheet';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';

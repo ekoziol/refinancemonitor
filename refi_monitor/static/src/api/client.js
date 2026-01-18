@@ -56,6 +56,11 @@ export const api = {
     body: JSON.stringify(data),
   }),
 
+  patch: (endpoint, data) => request(endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+
   delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
 };
 
