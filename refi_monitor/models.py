@@ -78,6 +78,7 @@ class Alert(db.Model):
 
     created_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     updated_on = db.Column(db.DateTime, index=False, unique=False, nullable=True)
+    deleted_at = db.Column(db.DateTime, index=True, unique=False, nullable=True)
 
     initial_payment = db.Column(db.Boolean, index=False, unique=False, nullable=True)
     payment_status = db.Column(db.String, index=False, unique=False, nullable=True)
@@ -90,6 +91,7 @@ class Alert(db.Model):
     price_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_customer_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
+    stripe_subscription_id = db.Column(db.String, index=False, unique=False, nullable=True)
     triggers = db.relationship("Trigger")
 
 

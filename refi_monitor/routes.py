@@ -55,7 +55,9 @@ def dashboard():
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
+        Alert.mortgage_id.in_([m.id for m in mortgages]),
+        Alert.initial_payment == True,
+        Alert.deleted_at == None
     )
 
     mortgage_alerts = []
@@ -89,7 +91,9 @@ def manage():
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
+        Alert.mortgage_id.in_([m.id for m in mortgages]),
+        Alert.initial_payment == True,
+        Alert.deleted_at == None
     )
 
     mortgage_alerts = []

@@ -10,7 +10,7 @@ from .calc import *
 
 def time_target_plot(m_id):
     mortgage = Mortgage.query.filter_by(id=m_id).first()
-    alert = Alert.query.filter_by(mortgage_id=m_id, initial_payment=True).first()
+    alert = Alert.query.filter_by(mortgage_id=m_id, initial_payment=True, deleted_at=None).first()
 
     refi_rate = 0.0275
     df = pd.read_csv("data/processed/20210911_mortgage_rate_daily_processed.csv")
@@ -56,7 +56,7 @@ def status_target_interest_plot(m_id):
 
 def status_target_payment_plot(m_id):
     mortgage = Mortgage.query.filter_by(id=m_id).first()
-    alert = Alert.query.filter_by(mortgage_id=m_id, initial_payment=True).first()
+    alert = Alert.query.filter_by(mortgage_id=m_id, initial_payment=True, deleted_at=None).first()
 
     refi_rate = 0.01
     refi_monthly_payment = calc_loan_monthly_payment(

@@ -1,4 +1,5 @@
 """Routes for user authentication."""
+from datetime import datetime
 from flask import (
     Blueprint,
     flash,
@@ -14,7 +15,7 @@ from . import login_manager
 from .forms import AddMortgageForm, AddAlertForm
 from .models import Mortgage, db, Alert, User
 from . import csrf
-from .notifications import send_payment_confirmation
+from .notifications import send_payment_confirmation, send_cancellation_confirmation
 
 import stripe
 import os
@@ -156,7 +157,7 @@ def addalert():
             return redirect(url_for('main_bp.dashboard'))
 
         existing_alert = Alert.query.filter_by(
-            mortgage_id=m_id, initial_payment=True
+            mortgage_id=m_id, initial_payment=True, deleted_at=None
         ).first()
 
         if existing_alert is None and current_user.id == mortgage.user_id:
@@ -207,7 +208,7 @@ def editalert(alert_id):
     #     return redirect(url_for('main_bp.dashboard'))
     # print("pass m_id: ", m_id)
     existing_alert = Alert.query.filter_by(
-        id=alert_id, user_id=current_user.id, initial_payment=True
+        id=alert_id, user_id=current_user.id, initial_payment=True, deleted_at=None
     ).first()
     if existing_alert is None:
         return redirect(url_for('main_bp.dashboard'))
@@ -357,9 +358,10 @@ def alert_payment_webhook():
             paid_alert.period_end = datalines['period']['end']
             paid_alert.price_id = datalines['price']['id']
             paid_alert.stripe_customer_id = data_object['customer']
-            paid_alert.stripe_invoice_id = datalines['subscription']
+            paid_alert.stripe_invoice_id = data_object['id']
+            paid_alert.stripe_subscription_id = datalines['subscription']
 
-            print("paid_alert_invoice_id: ", paid_alert.stripe_invoice_id)
+            print("paid_alert_subscription_id: ", paid_alert.stripe_subscription_id)
             db.session.commit()
 
             # Send payment confirmation email
@@ -391,3 +393,44 @@ def alert_payment_webhook():
         print('Unhandled event type {}'.format(event_type))
 
     return jsonify({'status': 'success'})
+
+
+@mortgage_bp.route('/deletealert/<int:alert_id>', methods=['POST'])
+@login_required
+def delete_alert(alert_id):
+    """
+    Delete an alert by canceling the Stripe subscription and soft-deleting the record.
+    """
+    alert = Alert.query.filter_by(
+        id=alert_id, user_id=current_user.id, deleted_at=None
+    ).first()
+
+    if alert is None:
+        flash('Alert not found')
+        return redirect(url_for('main_bp.manage'))
+
+    # Cancel Stripe subscription if exists
+    subscription_id = alert.stripe_subscription_id or alert.stripe_invoice_id
+    if subscription_id:
+        try:
+            stripe.Subscription.cancel(subscription_id)
+        except stripe.error.InvalidRequestError as e:
+            # Subscription may already be canceled or not exist
+            print(f"Stripe subscription cancel error: {e}")
+        except stripe.error.StripeError as e:
+            flash('Error canceling subscription. Please try again.')
+            print(f"Stripe error: {e}")
+            return redirect(url_for('main_bp.manage'))
+
+    # Soft delete the alert
+    alert.deleted_at = datetime.utcnow()
+    alert.payment_status = 'canceled'
+    db.session.commit()
+
+    # Send cancellation confirmation email
+    user = User.query.get(current_user.id)
+    if user:
+        send_cancellation_confirmation(user.email, alert_id)
+
+    flash('Alert deleted successfully')
+    return redirect(url_for('main_bp.manage'))
