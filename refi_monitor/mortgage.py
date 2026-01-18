@@ -13,7 +13,7 @@ from flask import (
 from flask_login import current_user, login_user, login_required
 from . import login_manager
 from .forms import AddMortgageForm, AddAlertForm
-from .models import Mortgage, db, Alert, User
+from .models import Mortgage, db, Alert, User, Subscription
 from . import csrf
 from .notifications import send_payment_confirmation, send_cancellation_confirmation
 
@@ -157,8 +157,10 @@ def addalert():
         if m_id is None or mortgage is None or mortgage.user_id != current_user.id:
             return redirect(url_for('main_bp.dashboard'))
 
-        existing_alert = Alert.query.filter_by(
-            mortgage_id=m_id, initial_payment=True, deleted_at=None
+        existing_alert = Alert.query.join(Subscription).filter(
+            Alert.mortgage_id == m_id,
+            Alert.deleted_at.is_(None),
+            Subscription.initial_payment == True
         ).first()
 
         if existing_alert is None and current_user.id == mortgage.user_id:
@@ -170,11 +172,19 @@ def addalert():
                 target_term=form.target_term.data,
                 target_interest_rate=form.target_interest_rate.data,
                 estimate_refinance_cost=form.estimate_refinance_cost.data,
-                initial_payment=False,
-                payment_status="incomplete",
             )
 
             db.session.add(alert)
+            db.session.flush()  # Get the alert ID
+
+            # Create subscription record
+            subscription = Subscription(
+                alert_id=alert.id,
+                initial_payment=False,
+                payment_status="incomplete",
+                created_on=datetime.utcnow(),
+            )
+            db.session.add(subscription)
             db.session.commit()
             db.session.flush()
             session['alert_id'] = alert.id
@@ -208,8 +218,11 @@ def editalert(alert_id):
     # if current_user.is_authenticated:
     #     return redirect(url_for('main_bp.dashboard'))
     # print("pass m_id: ", m_id)
-    existing_alert = Alert.query.filter_by(
-        id=alert_id, user_id=current_user.id, initial_payment=True, deleted_at=None
+    existing_alert = Alert.query.join(Subscription).filter(
+        Alert.id == alert_id,
+        Alert.user_id == current_user.id,
+        Alert.deleted_at.is_(None),
+        Subscription.initial_payment == True
     ).first()
     if existing_alert is None:
         return redirect(url_for('main_bp.dashboard'))
@@ -251,8 +264,10 @@ def update_alert_threshold(alert_id):
     AJAX endpoint for inline threshold editing.
     Updates target_monthly_payment or target_interest_rate based on alert_type.
     """
-    existing_alert = Alert.query.filter_by(
-        id=alert_id, user_id=current_user.id, initial_payment=True
+    existing_alert = Alert.query.join(Subscription).filter(
+        Alert.id == alert_id,
+        Alert.user_id == current_user.id,
+        Subscription.initial_payment == True
     ).first()
 
     if existing_alert is None:
@@ -399,18 +414,28 @@ def alert_payment_webhook():
         ).first()
 
         if paid_alert:
-            paid_alert.payment_status = 'active'
-            paid_alert.initial_payment = True
-            paid_alert.initial_period_start = datalines['period']['start']
-            paid_alert.initial_period_end = datalines['period']['end']
-            paid_alert.period_start = datalines['period']['start']
-            paid_alert.period_end = datalines['period']['end']
-            paid_alert.price_id = datalines['price']['id']
-            paid_alert.stripe_customer_id = data_object['customer']
-            paid_alert.stripe_invoice_id = data_object['id']
-            paid_alert.stripe_subscription_id = datalines['subscription']
+            # Get or create subscription for this alert
+            sub = paid_alert.subscription
+            if sub is None:
+                sub = Subscription(
+                    alert_id=paid_alert.id,
+                    created_on=datetime.utcnow(),
+                )
+                db.session.add(sub)
 
-            print("paid_alert_subscription_id: ", paid_alert.stripe_subscription_id)
+            sub.payment_status = 'active'
+            sub.initial_payment = True
+            sub.initial_period_start = datalines['period']['start']
+            sub.initial_period_end = datalines['period']['end']
+            sub.period_start = datalines['period']['start']
+            sub.period_end = datalines['period']['end']
+            sub.price_id = datalines['price']['id']
+            sub.stripe_customer_id = data_object['customer']
+            sub.stripe_invoice_id = data_object['id']
+            sub.stripe_subscription_id = datalines['subscription']
+            sub.updated_on = datetime.utcnow()
+
+            print("paid_alert_subscription_id: ", sub.stripe_subscription_id)
             db.session.commit()
 
             # Send payment confirmation email
@@ -433,8 +458,9 @@ def alert_payment_webhook():
                 mortgage_id=m_id, id=alert_id, user_id=user_id
             ).first()
 
-            if failed_alert:
-                failed_alert.payment_status = 'payment_failed'
+            if failed_alert and failed_alert.subscription:
+                failed_alert.subscription.payment_status = 'payment_failed'
+                failed_alert.subscription.updated_on = datetime.utcnow()
                 db.session.commit()
 
         print(data)
@@ -471,9 +497,11 @@ def delete_alert(alert_id):
             print(f"Stripe error: {e}")
             return redirect(url_for('main_bp.manage'))
 
-    # Soft delete the alert
+    # Soft delete the alert and update subscription status
     alert.deleted_at = datetime.utcnow()
-    alert.payment_status = 'canceled'
+    if alert.subscription:
+        alert.subscription.payment_status = 'canceled'
+        alert.subscription.updated_on = datetime.utcnow()
     db.session.commit()
 
     # Send cancellation confirmation email

@@ -5,7 +5,7 @@ from flask import current_app as app
 from flask import send_from_directory
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import current_user, login_required, logout_user
-from .models import Mortgage, Alert, Trigger
+from .models import Mortgage, Alert, Trigger, Subscription
 from .plots import *
 from .scheduler import trigger_manual_check
 
@@ -54,10 +54,14 @@ def dashboard():
     """Logged-in User Dashboard."""
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
-    alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
-    )
+    mortgage_ids = [m.id for m in mortgages]
+    alerts = Alert.query.join(Subscription).filter(
+        Alert.mortgage_id.in_(mortgage_ids),
+        Subscription.initial_payment == True
+    ).all()
 
+    # Refresh mortgages query for iteration
+    mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     mortgage_alerts = []
     for m in mortgages:
         matched = 0
@@ -88,10 +92,14 @@ def manage():
     """Logged-in User Dashboard."""
 
     mortgages = Mortgage.query.filter_by(user_id=current_user.id)
-    alerts = Alert.query.filter(
-        Alert.mortgage_id.in_([m.id for m in mortgages]), Alert.initial_payment == True
-    )
+    mortgage_ids = [m.id for m in mortgages]
+    alerts = Alert.query.join(Subscription).filter(
+        Alert.mortgage_id.in_(mortgage_ids),
+        Subscription.initial_payment == True
+    ).all()
 
+    # Refresh mortgages query for iteration
+    mortgages = Mortgage.query.filter_by(user_id=current_user.id)
     mortgage_alerts = []
     for m in mortgages:
         matched = 0
@@ -147,9 +155,9 @@ def history():
     mortgages = Mortgage.query.filter_by(user_id=current_user.id).all()
     mortgage_ids = [m.id for m in mortgages]
 
-    alerts = Alert.query.filter(
+    alerts = Alert.query.join(Subscription).filter(
         Alert.mortgage_id.in_(mortgage_ids),
-        Alert.initial_payment == True
+        Subscription.initial_payment == True
     ).all()
     alert_ids = [a.id for a in alerts]
 
