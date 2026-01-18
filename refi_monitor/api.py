@@ -43,6 +43,7 @@ def alert_to_dict(alert):
         'estimate_refinance_cost': alert.estimate_refinance_cost,
         'calculated_refinance_cost': alert.calculated_refinance_cost,
         'payment_status': alert.payment_status,
+        'status': alert.get_status(),
         'created_on': alert.created_on.isoformat() if alert.created_on else None,
         'updated_on': alert.updated_on.isoformat() if alert.updated_on else None,
     }
