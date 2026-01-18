@@ -244,6 +244,54 @@ def editalert(alert_id):
     )
 
 
+@mortgage_bp.route('/api/alert/<int:alert_id>/threshold', methods=['POST'])
+@login_required
+def update_alert_threshold(alert_id):
+    """
+    AJAX endpoint for inline threshold editing.
+    Updates target_monthly_payment or target_interest_rate based on alert_type.
+    """
+    existing_alert = Alert.query.filter_by(
+        id=alert_id, user_id=current_user.id, initial_payment=True
+    ).first()
+
+    if existing_alert is None:
+        return jsonify({'status': 'error', 'message': 'Alert not found'}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+
+    threshold_value = data.get('threshold_value')
+    if threshold_value is None:
+        return jsonify({'status': 'error', 'message': 'No threshold value provided'}), 400
+
+    try:
+        threshold_value = float(threshold_value)
+    except (ValueError, TypeError):
+        return jsonify({'status': 'error', 'message': 'Invalid threshold value'}), 400
+
+    if existing_alert.alert_type == 'Monthly Payment':
+        if threshold_value <= 0:
+            return jsonify({'status': 'error', 'message': 'Payment must be greater than 0'}), 400
+        existing_alert.target_monthly_payment = threshold_value
+    elif existing_alert.alert_type == 'Interest Rate':
+        if threshold_value < 0 or threshold_value > 100:
+            return jsonify({'status': 'error', 'message': 'Rate must be between 0 and 100'}), 400
+        existing_alert.target_interest_rate = threshold_value
+    else:
+        return jsonify({'status': 'error', 'message': 'Unknown alert type'}), 400
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Threshold updated',
+        'alert_type': existing_alert.alert_type,
+        'threshold_value': threshold_value
+    })
+
+
 @mortgage_bp.route('/checkout')
 @login_required
 def checkout():

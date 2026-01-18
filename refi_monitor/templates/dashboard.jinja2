@@ -80,18 +80,44 @@
                         </td>
                 {% if a.alert_type == "Monthly Payment" %}
                     <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
+                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg threshold-card" data-alert-id="{{ a.id }}" data-alert-type="Monthly Payment">
                             <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">${{ a.target_monthly_payment }}</h2>
+                                <div class="threshold-display">
+                                    <h2 class="text-xl text-center text-gray-200 capitalize threshold-value">${{ a.target_monthly_payment }}</h2>
+                                    <button class="edit-threshold-btn text-xs text-blue-400 hover:text-blue-300 mt-1 block mx-auto">Edit</button>
+                                </div>
+                                <div class="threshold-edit hidden">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span class="text-gray-200">$</span>
+                                        <input type="number" step="0.01" min="0" class="threshold-input w-24 px-2 py-1 text-center bg-gray-600 text-gray-200 rounded border border-gray-500 focus:border-blue-500 focus:outline-none" value="{{ a.target_monthly_payment }}">
+                                    </div>
+                                    <div class="flex justify-center gap-2 mt-2">
+                                        <button class="save-threshold-btn text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">Save</button>
+                                        <button class="cancel-threshold-btn text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded">Cancel</button>
+                                    </div>
+                                </div>
                                 <h3 class="text-sm  text-gray-400  text-center">Target Monthly Payment</h3>
                             </div>
                         </div>
                     </td>
                 {% elif a.alert_type == "Interest Rate" %}
                     <td>
-                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg">
+                        <div class="bg-gradient-to-r flex-auto w-42 h-42  from-gray-800 to-gray-700    shadow-lg    rounded-lg threshold-card" data-alert-id="{{ a.id }}" data-alert-type="Interest Rate">
                             <div class="md:p-7 p-4">
-                                <h2 class="text-xl text-center text-gray-200 capitalize">{{ a.target_interest_rate }}%</h2>
+                                <div class="threshold-display">
+                                    <h2 class="text-xl text-center text-gray-200 capitalize threshold-value">{{ a.target_interest_rate }}%</h2>
+                                    <button class="edit-threshold-btn text-xs text-blue-400 hover:text-blue-300 mt-1 block mx-auto">Edit</button>
+                                </div>
+                                <div class="threshold-edit hidden">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <input type="number" step="0.01" min="0" max="100" class="threshold-input w-20 px-2 py-1 text-center bg-gray-600 text-gray-200 rounded border border-gray-500 focus:border-blue-500 focus:outline-none" value="{{ a.target_interest_rate }}">
+                                        <span class="text-gray-200">%</span>
+                                    </div>
+                                    <div class="flex justify-center gap-2 mt-2">
+                                        <button class="save-threshold-btn text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">Save</button>
+                                        <button class="cancel-threshold-btn text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded">Cancel</button>
+                                    </div>
+                                </div>
                                 <h3 class="text-sm  text-gray-400  text-center">Target Interest Rate:</h3>
                             </div>
                         </div>
@@ -148,4 +174,96 @@
     {% endif %}
 
     </table>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const thresholdCards = document.querySelectorAll('.threshold-card');
+
+    thresholdCards.forEach(function(card) {
+        const alertId = card.dataset.alertId;
+        const alertType = card.dataset.alertType;
+        const displayDiv = card.querySelector('.threshold-display');
+        const editDiv = card.querySelector('.threshold-edit');
+        const valueEl = card.querySelector('.threshold-value');
+        const inputEl = card.querySelector('.threshold-input');
+        const editBtn = card.querySelector('.edit-threshold-btn');
+        const saveBtn = card.querySelector('.save-threshold-btn');
+        const cancelBtn = card.querySelector('.cancel-threshold-btn');
+
+        let originalValue = inputEl.value;
+
+        editBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            originalValue = inputEl.value;
+            displayDiv.classList.add('hidden');
+            editDiv.classList.remove('hidden');
+            inputEl.focus();
+            inputEl.select();
+        });
+
+        cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            inputEl.value = originalValue;
+            editDiv.classList.add('hidden');
+            displayDiv.classList.remove('hidden');
+        });
+
+        saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const newValue = parseFloat(inputEl.value);
+
+            if (isNaN(newValue)) {
+                alert('Please enter a valid number');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = '...';
+
+            fetch('/api/alert/' + alertId + '/threshold', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ threshold_value: newValue })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    if (alertType === 'Monthly Payment') {
+                        valueEl.textContent = '$' + newValue;
+                    } else {
+                        valueEl.textContent = newValue + '%';
+                    }
+                    originalValue = newValue;
+                    editDiv.classList.add('hidden');
+                    displayDiv.classList.remove('hidden');
+                } else {
+                    alert(data.message || 'Failed to update threshold');
+                }
+            })
+            .catch(function(error) {
+                alert('Error updating threshold: ' + error.message);
+            })
+            .finally(function() {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            });
+        });
+
+        inputEl.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveBtn.click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelBtn.click();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
