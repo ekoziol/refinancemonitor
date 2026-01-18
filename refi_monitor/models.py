@@ -90,6 +90,7 @@ class Alert(db.Model):
     price_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_customer_id = db.Column(db.String, index=False, unique=False, nullable=True)
     stripe_invoice_id = db.Column(db.String, index=False, unique=False, nullable=True)
+    paused_at = db.Column(db.DateTime, index=False, unique=False, nullable=True)
     triggers = db.relationship("Trigger")
 
 
