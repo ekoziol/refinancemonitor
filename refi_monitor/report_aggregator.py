@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from sqlalchemy import func
 
 from . import db
-from .models import MortgageRate, Mortgage, Mortgage_Tracking, User, Alert
+from .models import MortgageRate, Mortgage, Mortgage_Tracking, User, Alert, UserPreference
 from .calc import calc_loan_monthly_payment, ipmt_total, time_to_even
 
 logger = logging.getLogger(__name__)
@@ -388,6 +388,21 @@ class ReportDataAggregationService:
                 Alert.payment_status == 'paid'
             ).all()
             user_ids = list(set(a.user_id for a in active_alerts))
+
+        # Filter out users who have opted out of monthly reports
+        if user_ids:
+            opted_out_query = db.session.query(UserPreference.user_id).filter(
+                UserPreference.user_id.in_(user_ids),
+                UserPreference.monthly_report_enabled == False  # noqa: E712
+            )
+            opted_out_user_ids = {row[0] for row in opted_out_query.all()}
+            original_count = len(user_ids)
+            user_ids = [uid for uid in user_ids if uid not in opted_out_user_ids]
+            if opted_out_user_ids:
+                logger.info(
+                    f"Filtered {len(opted_out_user_ids)} opted-out users "
+                    f"({original_count} -> {len(user_ids)})"
+                )
 
         reports = []
         for user_id in user_ids:
