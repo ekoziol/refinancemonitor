@@ -45,6 +45,9 @@ class Config:
     MAIL_PASSWORD = environ.get("MAIL_PASSWORD")
     MAIL_DEFAULT_SENDER = environ.get("MAIL_DEFAULT_SENDER", "noreply@refialert.com")
 
+    # Base URL for email links (e.g., verification emails)
+    BASE_URL = environ.get("BASE_URL", "http://localhost:5000")
+
 
 class ProdConfig(Config):
     FLASK_ENV = 'production'
