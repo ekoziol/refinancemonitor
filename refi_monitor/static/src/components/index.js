@@ -3,6 +3,31 @@ export { default as MetricCards } from './MetricCards';
 export { default as SavingsImpactChart } from './SavingsImpactChart';
 export { default as TimelineVisualization } from './TimelineVisualization';
 
+// Chart infrastructure (Recharts setup)
+export {
+  BaseChart,
+  ChartTooltip,
+  ChartLegend,
+  SimpleLegend,
+  chartColors,
+  chartColorScale,
+  semanticColors,
+  areaColors,
+  gridColors,
+  referenceColors,
+  getChartColor,
+  generateColorScale,
+  defaultAxisConfig,
+  defaultGridConfig,
+  defaultMargin,
+  createCurrencyAxisProps,
+  createPercentAxisProps,
+  createTimeAxisProps,
+  formatTooltipValue,
+  createTooltip,
+  createLegend,
+} from './charts';
+
 // UI Primitives (shadcn/ui)
 export {
   Button,
