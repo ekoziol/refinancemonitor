@@ -3,6 +3,11 @@ export { default as MetricCards } from './MetricCards';
 export { default as SavingsImpactChart } from './SavingsImpactChart';
 export { default as TimelineVisualization } from './TimelineVisualization';
 
+// RefiTriggerPoint Components (E3.4)
+export { default as ProximityGauge } from './ProximityGauge';
+export { default as DecisionGuide } from './DecisionGuide';
+export { default as FinancialImpact } from './FinancialImpact';
+
 // UI Primitives (shadcn/ui)
 export {
   Button,
