@@ -441,6 +441,7 @@ class TestPasswordResetRateLimiting:
 
     def test_rate_limit_constants(self):
         """Test that rate limit constants are properly configured."""
+        pytest.importorskip('flask_assets')
         from refi_monitor.auth import PASSWORD_RESET_RATE_LIMIT, PASSWORD_RESET_RATE_WINDOW
 
         # Should allow reasonable number of attempts
