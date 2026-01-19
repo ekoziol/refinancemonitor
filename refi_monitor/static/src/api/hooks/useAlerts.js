@@ -60,3 +60,27 @@ export function useDeleteAlert() {
     },
   });
 }
+
+export function usePauseAlert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => api.post(`/alerts/${id}/pause`),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: alertKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: alertKeys.detail(variables) });
+    },
+  });
+}
+
+export function useResumeAlert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => api.post(`/alerts/${id}/resume`),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: alertKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: alertKeys.detail(variables) });
+    },
+  });
+}
