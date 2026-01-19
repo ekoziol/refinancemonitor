@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RefiAlert Monthly Digest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2c5282;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header .date {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            background-color: white;
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            color: #2c5282;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .rate-trend {
+            background-color: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .rate-trend .term {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .rate-trend .rate {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5282;
+        }
+        .rate-trend .change {
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .rate-trend .change.up {
+            color: #c53030;
+        }
+        .rate-trend .change.down {
+            color: #2f855a;
+        }
+        .rate-trend .change.neutral {
+            color: #718096;
+        }
+        .mortgage-card {
+            background-color: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2c5282;
+        }
+        .mortgage-card .name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        .mortgage-card .details {
+            display: table;
+            width: 100%;
+        }
+        .mortgage-card .detail-row {
+            display: table-row;
+        }
+        .mortgage-card .detail-label {
+            display: table-cell;
+            color: #718096;
+            padding: 5px 0;
+            width: 50%;
+        }
+        .mortgage-card .detail-value {
+            display: table-cell;
+            font-weight: bold;
+            padding: 5px 0;
+        }
+        .opportunity-card {
+            background-color: #f0fff4;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2f855a;
+        }
+        .opportunity-card .title {
+            font-weight: bold;
+            color: #2f855a;
+            margin-bottom: 10px;
+        }
+        .opportunity-card .savings {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2f855a;
+        }
+        .no-opportunities {
+            background-color: #edf2f7;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #718096;
+        }
+        .summary-box {
+            background-color: #ebf8ff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary-box .label {
+            color: #2c5282;
+            font-size: 14px;
+        }
+        .summary-box .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c5282;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2c5282;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .footer {
+            background-color: #edf2f7;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #718096;
+            border-radius: 0 0 8px 8px;
+        }
+        .footer a {
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RefiAlert Monthly Digest</h1>
+            <div class="date">{{ report_month }}</div>
+        </div>
+
+        <div class="content">
+            <p>Hello {{ user_name }},</p>
+            <p>Here's your monthly mortgage market update and personalized refinancing insights.</p>
+
+            <!-- Rate Trends Section -->
+            <div class="section">
+                <h2 class="section-title">Current Rate Trends</h2>
+                {% if rate_trends %}
+                {% for trend in rate_trends %}
+                <div class="rate-trend">
+                    <span class="term">{{ trend.term_label }}</span>
+                    <div>
+                        <span class="rate">{{ "%.3f"|format(trend.current_rate) }}%</span>
+                        {% if trend.change != 0 %}
+                        <span class="change {% if trend.change > 0 %}up{% elif trend.change < 0 %}down{% else %}neutral{% endif %}">
+                            {% if trend.change > 0 %}+{% endif %}{{ "%.3f"|format(trend.change) }}% from last month
+                        </span>
+                        {% else %}
+                        <span class="change neutral">No change from last month</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-opportunities">
+                    <p>Rate data is currently being collected. Check back next month for trends.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Mortgage Status Section -->
+            <div class="section">
+                <h2 class="section-title">Your Mortgages</h2>
+                {% if mortgages %}
+                {% for mortgage in mortgages %}
+                <div class="mortgage-card">
+                    <div class="name">{{ mortgage.name }}</div>
+                    <div class="details">
+                        <div class="detail-row">
+                            <span class="detail-label">Remaining Balance:</span>
+                            <span class="detail-value">${{ "{:,.2f}".format(mortgage.remaining_principal) }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Current Rate:</span>
+                            <span class="detail-value">{{ "%.2f"|format(mortgage.original_interest_rate * 100) }}%</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Remaining Term:</span>
+                            <span class="detail-value">{{ mortgage.remaining_term }} months ({{ (mortgage.remaining_term / 12)|round(1) }} years)</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Monthly Payment:</span>
+                            <span class="detail-value">${{ "{:,.2f}".format(mortgage.monthly_payment) }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-opportunities">
+                    <p>No mortgages on file. Add a mortgage to start tracking refinancing opportunities.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Savings Opportunities Section -->
+            <div class="section">
+                <h2 class="section-title">Savings Opportunities</h2>
+                {% if opportunities %}
+                {% for opp in opportunities %}
+                <div class="opportunity-card">
+                    <div class="title">{{ opp.mortgage_name }}</div>
+                    <p>Based on current {{ opp.term_label }} rates of {{ "%.3f"|format(opp.current_market_rate) }}%, you could save:</p>
+                    <div>
+                        <span class="savings">${{ "{:,.2f}".format(opp.monthly_savings) }}/month</span>
+                    </div>
+                    <p style="margin-top: 10px; font-size: 14px; color: #4a5568;">
+                        Potential lifetime savings: <strong>${{ "{:,.2f}".format(opp.lifetime_savings) }}</strong><br>
+                        New monthly payment: <strong>${{ "{:,.2f}".format(opp.new_monthly_payment) }}</strong>
+                    </p>
+                </div>
+                {% endfor %}
+
+                {% if total_monthly_savings > 0 %}
+                <div class="summary-box">
+                    <div class="label">Total Potential Monthly Savings</div>
+                    <div class="value">${{ "{:,.2f}".format(total_monthly_savings) }}</div>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="no-opportunities">
+                    <p>No significant refinancing opportunities this month. We'll continue monitoring rates for you.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Call to Action -->
+            <div style="text-align: center; margin-top: 30px;">
+                <p>Want to explore these opportunities further?</p>
+                <a href="{{ dashboard_url }}" class="btn">View Your Dashboard</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This is your monthly digest from RefiAlert.</p>
+            <p>To manage your email preferences or update your alert settings, <a href="{{ dashboard_url }}">log in to your account</a>.</p>
+            <p style="margin-top: 15px;">&copy; {{ current_year }} RefiAlert. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
