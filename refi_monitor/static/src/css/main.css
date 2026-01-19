@@ -250,6 +250,22 @@
     margin-left: var(--sidebar-collapsed-width);
   }
 
+  /* Mobile responsive - hide sidebar and reset margins */
+  @media (max-width: 768px) {
+    .sidebar {
+      @apply -translate-x-full;
+    }
+
+    .sidebar-collapsed {
+      @apply -translate-x-full;
+    }
+
+    .main-content,
+    .main-content-collapsed {
+      margin-left: 0;
+    }
+  }
+
   /* Dashboard layout */
   .dashboard-layout {
     @apply flex min-h-screen;
@@ -262,6 +278,71 @@
     @apply flex items-center justify-between;
     @apply bg-background/80 backdrop-blur-glass;
     @apply border-b border-border;
+  }
+
+  /* TopBar styles */
+  .topbar {
+    @apply sticky top-0 z-30;
+    @apply h-16 px-4 md:px-6;
+    @apply flex items-center gap-4;
+    @apply bg-background/80 backdrop-blur-glass;
+    @apply border-b border-border;
+  }
+
+  .topbar-menu-btn {
+    @apply p-2 -ml-2 rounded-md;
+    @apply hover:bg-accent;
+    @apply transition-colors;
+  }
+
+  .topbar-action {
+    @apply relative p-2 rounded-md;
+    @apply text-muted-foreground;
+    @apply hover:bg-accent hover:text-foreground;
+    @apply transition-colors;
+  }
+
+  .topbar-action-badge {
+    @apply absolute -top-1 -right-1;
+    @apply min-w-[18px] h-[18px];
+    @apply flex items-center justify-center;
+    @apply text-[10px] font-semibold;
+    @apply bg-destructive text-destructive-foreground;
+    @apply rounded-full;
+  }
+
+  .topbar-user {
+    @apply flex items-center gap-2 p-1 rounded-md;
+    @apply hover:bg-accent;
+    @apply transition-colors;
+  }
+
+  .topbar-user-avatar {
+    @apply w-8 h-8;
+    @apply flex items-center justify-center;
+    @apply text-xs font-semibold;
+    @apply bg-primary text-primary-foreground;
+    @apply rounded-full;
+  }
+
+  /* Mobile sidebar overlay */
+  .mobile-sidebar-overlay {
+    @apply fixed inset-0 z-40;
+    @apply bg-background/80 backdrop-blur-sm;
+  }
+
+  .mobile-sidebar {
+    @apply fixed inset-y-0 left-0 z-50;
+    @apply w-[280px] max-w-[85vw];
+    @apply bg-sidebar text-sidebar-foreground;
+    @apply border-r border-sidebar-border;
+    @apply flex flex-col;
+    @apply animate-slide-in-from-left;
+  }
+
+  .mobile-sidebar-header {
+    @apply flex items-center justify-between h-16 px-4;
+    @apply border-b border-sidebar-border;
   }
 
   .dashboard-main {

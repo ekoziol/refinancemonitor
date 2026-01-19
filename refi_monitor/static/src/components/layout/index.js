@@ -5,5 +5,7 @@ export {
   DashboardMain,
   DashboardGrid,
   DashboardSection,
+  MobileSidebar,
   useDashboardLayout,
 } from './DashboardLayout';
+export { TopBar, TopBarAction, TopBarUserMenu } from './TopBar';
