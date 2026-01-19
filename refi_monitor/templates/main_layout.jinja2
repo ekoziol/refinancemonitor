@@ -3,6 +3,9 @@
 {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/main.css') }}" type="text/css">
 {% endblock %}
+{% block scripts %}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}
 <div class="min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased bg-gray-300 text-gray-800">
 <!--     <div>
 
