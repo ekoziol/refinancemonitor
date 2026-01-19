@@ -50,18 +50,6 @@ export function useUpdateAlert() {
   });
 }
 
-export function usePatchAlertThreshold() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }) => api.patch(`/alerts/${id}`, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: alertKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: alertKeys.detail(variables.id) });
-    },
-  });
-}
-
 export function useDeleteAlert() {
   const queryClient = useQueryClient();
 
@@ -78,9 +66,9 @@ export function usePauseAlert() {
 
   return useMutation({
     mutationFn: (id) => api.post(`/alerts/${id}/pause`),
-    onSuccess: (data, id) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: alertKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: alertKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: alertKeys.detail(variables) });
     },
   });
 }
@@ -90,9 +78,9 @@ export function useResumeAlert() {
 
   return useMutation({
     mutationFn: (id) => api.post(`/alerts/${id}/resume`),
-    onSuccess: (data, id) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: alertKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: alertKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: alertKeys.detail(variables) });
     },
   });
 }

@@ -16,6 +16,8 @@ export { RadioGroup, RadioGroupItem } from './radio-group';
 export { Skeleton } from './skeleton';
 export { Progress } from './progress';
 export { Spinner, spinnerVariants } from './spinner';
+export { LoadingState } from './loading-state';
+export { ErrorState } from './error-state';
 export {
   Toast,
   ToastTitle,
